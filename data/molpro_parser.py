@@ -189,6 +189,8 @@ def filename_parse(filename):
 
     # Since SV-P is misspelled as SV-P_, catch that
     filename = filename.replace("SV-P_", "SV-P")
+    # Same with 6-31+G-d,p
+    filename = filename.replace("6-31+G-d,p_", "6-31+G-d,p")
 
     tokens = filename.split("/")[-1].split("_")
     mol = tokens[0]
@@ -404,7 +406,8 @@ def parse_reactions(reaction_filename, df):
     # Sort so the order for the reactions are correct
     df.sort_values(['functional', 'basis', 'unrestricted', 'molecule'], inplace=True)
     # make new dataframe for the reactions with the same structure as df
-    dfr = pd.DataFrame.from_items([(name, pd.Series(data=None, dtype=series.dtype)) for name, series in df.iteritems()])
+    #dfr = pd.DataFrame.from_items([(name, pd.Series(data=None, dtype=series.dtype)) for name, series in df.iteritems()])
+    dfr = pd.DataFrame.from_dict(dict([(name, pd.Series(data=None, dtype=series.dtype)) for name, series in df.iteritems()]))
     # rename molecule to reaction
     dfr.rename(index=str, columns={'molecule':'reaction'}, inplace=True)
     mol_list = df.molecule.unique().tolist()
@@ -449,9 +452,9 @@ def parse_reactions(reaction_filename, df):
             df_reaction.time += df.loc[df.molecule == reactant].time.values
         for product in products:
             df_reaction.energy += df.loc[df.molecule == product].energy.values
-            df_reaction.one_electron_energy -= df.loc[df.molecule == product].one_electron_energy.values
-            df_reaction.two_electron_energy -= df.loc[df.molecule == product].two_electron_energy.values
-            df_reaction.correlation_energy -= df.loc[df.molecule == product].correlation_energy.values
+            df_reaction.one_electron_energy += df.loc[df.molecule == product].one_electron_energy.values
+            df_reaction.two_electron_energy += df.loc[df.molecule == product].two_electron_energy.values
+            df_reaction.correlation_energy += df.loc[df.molecule == product].correlation_energy.values
             df_reaction.time += df.loc[df.molecule == product].time.values
 
         # subtract uCCSD reference
@@ -466,10 +469,6 @@ def parse_reactions(reaction_filename, df):
         #dfr = dfr.append(df_reaction[df_reaction.functional != 'uCCSD'], ignore_index = True)
         # Add everything to the dataframe
         dfr = dfr.append(df_reaction, ignore_index = True, sort = True)
-        print(reaction_name, df_reaction[df_reaction.functional == 'uCCSD'].energy.values[0], float(reference), df_reaction[df_reaction.functional == 'uCCSD'].energy.values[0] - float(reference))
-    print(dfr.head())
-    print(dfr[dfr.functional == 'uCCSD'].energy.values - np.asarray(reference_energies))
-    quit()
 
     return dfr
 
@@ -490,14 +489,12 @@ def make_pickles(data_set_name, data_set_path = "../../portfolio_datasets/", pic
         mol_df = parse_molpro(filenames, data_set_name)
         print_missing(mol_df, data_set_name)
         mol_df.to_pickle(mol_df_name)
-    return
 
     # Try to read the reaction pickle, else make it.
     try:
         reac_df = pd.read_pickle(reac_df_name)
     except FileNotFoundError:
         reac_df = parse_reactions(data_set_name + "_reactions", mol_df)
-        quit()
         reac_df['dataset'] = data_set_name
         set_median_timings(reac_df)
         reac_df.to_pickle(reac_df_name)
@@ -516,9 +513,9 @@ def set_median_timings(df):
         for un in True, False:
             for bas in unique_basis:
                 # First ggas
-                gga_df = df.loc[(df.reaction == reac) & (df.basis == bas) & (df.unrestricted == un) & 
-                        (df.isin(['B88X', 'B', 'BECKE', 'B-LYP', 'B-P', 'B-VWN', 'CS', 'D', 'HFB', 'HFS', 
-                            'LDA', 'LSDAC', 'LSDC', 'LYP88', 'PBE', 'PBEREV', 'PW91', 'S', 'SLATER', 'SOGGA11', 
+                gga_df = df.loc[(df.reaction == reac) & (df.basis == bas) & (df.unrestricted == un) &
+                        (df.isin(['B88X', 'B', 'BECKE', 'B-LYP', 'B-P', 'B-VWN', 'CS', 'D', 'HFB', 'HFS',
+                            'LDA', 'LSDAC', 'LSDC', 'LYP88', 'PBE', 'PBEREV', 'PW91', 'S', 'SLATER', 'SOGGA11',
                             'SOGGA', 'S-VWN', 'VS99', 'VWN80', 'VWN']).functional)]
                 # then hybrids
                 hybrid_df = df.loc[(df.reaction == reac) & (df.basis == bas) & (df.unrestricted == un) & (df.isin(['B3LYP3','B3LYP5','B97', 'B97R', 'BH-LYP', 'PBE0', 'PBE0MOL', 'SOGGA11-X']).functional)]
@@ -560,9 +557,12 @@ def main():
     quit()
 
     # combine
-    df = abde12_reac.append(nhtbh38_reac, ignore_index = True)
+    abde12_nhtbh38 = abde12_reac.append(nhtbh38_reac, ignore_index = True)
+    df = abde12_nhtbh38.append(htbh38_reac, ignore_index = True)
     df.to_pickle("pickles/combined_reac.pkl")
-    #print(df.head())
+    print(df.head())
+    quit()
+    # Get the slowest reaction
     df2 = df.loc[(df.functional == "PBE0") & (df.basis == "qzvp") & (df.unrestricted == True)].time
     slow_name = df.at[df2.idxmax(), "reaction"]
     slow_df = simplify_timings(df, slow_name)
