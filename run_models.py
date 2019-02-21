@@ -222,12 +222,13 @@ def parse_reaction_dataframe(df):
     unique_reactions = df.reaction.unique()
 
     energies = []
-    errors = []
+    references = []
     classes = []
     for idx, reac in enumerate(unique_reactions):
         sub_df = df.loc[df.reaction == reac]
+        reference = df.loc[(df.reaction == reac) & (df.functional == 'uCCSD')]
         energies.append(sub_df.energy.values)
-        errors.append(sub_df.error.values)
+        references.append(sub_df.error.values)
         classes.append(sub_df.main_class.values[0])
 
         # get names of the methods
@@ -241,7 +242,7 @@ def parse_reaction_dataframe(df):
     energies = np.asarray(energies, dtype = float)
     errors = np.asarray(errors, dtype = float)
     classes = np.asarray(classes, dtype = int)
-    
+
     reference = (energies - errors)[:,0]
 
     # Set the cost to be the biggest reaction
@@ -358,7 +359,7 @@ def get_best_params(params):
 
 
 if __name__ == "__main__":
-    df = pd.read_pickle("deprecated/abde12_reac.pkl")
+    df = pd.read_pickle("pickles/abde12_reac.pkl")
     # all but x,y is optional
     x, y, cost, names, rclass = parse_reaction_dataframe(df)
 

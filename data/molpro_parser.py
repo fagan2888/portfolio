@@ -8,48 +8,48 @@ def data_parse(filename, real_filename = None):
     Opens a molpro output file and parses the energy and computation time.
     """
 
-    try:
-        with open(filename) as f:
-            lines = f.readlines()
-        if "DCSD" in filename:
-            # ccsd tends to crash with H since there's only one electron
-            if filename.split("/")[-1].startswith("H-_") \
-                or filename.split("/")[-1].startswith("H_") \
-                or filename.split("/")[-1].startswith("F_")   and "sto-3g" in filename \
-                or filename.split("/")[-1].startswith("F-_")  and "sto-3g" in filename \
-                or filename.split("/")[-1].startswith("O_")   and "sto-3g" in filename \
-                or filename.split("/")[-1].startswith("O-_")  and "sto-3g" in filename \
-                or filename.split("/")[-1].startswith("Cl_")  and "sto-3g" in filename \
-                or filename.split("/")[-1].startswith("Cl-_") and "sto-3g" in filename:
-                data = parse_dcsd(lines, True)
-            else:
-                data =  parse_dcsd(lines)
-        #elif "luCCSD" in filename:
-        #    if filename.split("/")[-1].startswith("H-_") \
-        #        or filename.split("/")[-1].startswith("H_"):
-        #        data = parse_luccsd(lines, True)
-        #    else:
-        #        data =  parse_luccsd(lines)
-        elif "_uCCSD" in filename:
-            data =  parse_uccsd(lines)
-
-        elif "lrmp2" in filename:
-            data = parse_lrmp2(lines)
-        elif "KS" in lines[-4]:
-            data = parse_dft(lines)
-        elif filename.split("/")[-1].startswith("H_D3") and "sto-3g" in filename:
-            # special case where molpro fails to run dispersion on hydrogen
-            return data_parse(filename.replace("D3",""), filename)
-        elif filename.split("/")[-1].startswith("H_dc") and "sto-3g" in filename:
-            # special case where molpro fails to run dc on hydrogen
-            return data_parse(filename.replace("dc",""), filename)
-
+    #try:
+    with open(filename) as f:
+        lines = f.readlines()
+    if "DCSD" in filename:
+        # ccsd tends to crash with H since there's only one electron
+        if filename.split("/")[-1].startswith("H-_") \
+            or filename.split("/")[-1].startswith("H_") \
+            or filename.split("/")[-1].startswith("F_")   and "sto-3g" in filename \
+            or filename.split("/")[-1].startswith("F-_")  and "sto-3g" in filename \
+            or filename.split("/")[-1].startswith("O_")   and "sto-3g" in filename \
+            or filename.split("/")[-1].startswith("O-_")  and "sto-3g" in filename \
+            or filename.split("/")[-1].startswith("Cl_")  and "sto-3g" in filename \
+            or filename.split("/")[-1].startswith("Cl-_") and "sto-3g" in filename:
+            data = parse_dcsd(lines, True)
         else:
-            print("parsing error for", filename)
-            quit()
-    except:
+            data =  parse_dcsd(lines)
+    #elif "luCCSD" in filename:
+    #    if filename.split("/")[-1].startswith("H-_") \
+    #        or filename.split("/")[-1].startswith("H_"):
+    #        data = parse_luccsd(lines, True)
+    #    else:
+    #        data =  parse_luccsd(lines)
+    elif "_uCCSD" in filename:
+        data =  parse_uccsd(lines)
+
+    elif "lrmp2" in filename:
+        data = parse_lrmp2(lines)
+    elif "KS" in lines[-4]:
+        data = parse_dft(lines)
+    elif filename.split("/")[-1].startswith("H_D3") and "sto-3g" in filename:
+        # special case where molpro fails to run dispersion on hydrogen
+        return data_parse(filename.replace("D3",""), filename)
+    elif filename.split("/")[-1].startswith("H_dc") and "sto-3g" in filename:
+        # special case where molpro fails to run dc on hydrogen
+        return data_parse(filename.replace("dc",""), filename)
+
+    else:
         print("parsing error for", filename)
-        return
+        quit()
+    #except:
+    #    print("parsing error for", filename)
+    #    return
 
     if not is_none(real_filename):
         filename = real_filename
@@ -63,9 +63,11 @@ def parse_lrmp2(lines):
     e2 = None
     ce = None
     time = None
+    has_energy = False
     for i, line in enumerate(lines[-3::-1]):
-        if "DF-LRMP2" in line or "HF-SCF" in line:
+        if ("DF-LRMP2" in line or "HF-SCF" in line) and has_energy == False:
             energy = float(lines[-3-i+1].split()[0])
+            has_energy = True
         elif "CPU TIMES" in line:
             time = float(line.split()[3])
         elif "LRMP2 correlation energy" in line:
@@ -130,7 +132,7 @@ def parse_dcsd(lines, single_atom = False):
         ce = 0
 
     for line in lines[-3::-1]:
-        if "!RHF STATE 1.1 Energy" in line and single_atom:
+        if "!RHF STATE" in line and "1.1 Energy" in line and single_atom:
             energy = float(line.split()[4])
             break
         elif "CPU TIMES" in line:
@@ -335,7 +337,8 @@ def parse_molpro(filenames, data_set):
                 #    continue
                 # The df-lrmp2 is only restricted.
                 if func == 'df-lrmp2':
-                    if basis in ['sto-3g', 'SV-P']:
+                    # Only select basis sets are used
+                    if basis in ['sto-3g', 'SV-P', '6-31+G-d,p']:
                         continue
                     sub = df.loc[(df.molecule == mol) & (df.functional == func) & (df.basis == basis)]
                     if sub.shape[0] == 0:
@@ -394,6 +397,7 @@ def print_missing(df, name):
     """
     Print any method with missing energy
     """
+    pd.set_option('display.max_rows', 20000)
     missing = df.loc[(df.energy.isnull())]
     if missing.size > 0:
         print("Missing elements in the %s data set" % name)
@@ -456,6 +460,10 @@ def parse_reactions(reaction_filename, df):
             df_reaction.two_electron_energy += df.loc[df.molecule == product].two_electron_energy.values
             df_reaction.correlation_energy += df.loc[df.molecule == product].correlation_energy.values
             df_reaction.time += df.loc[df.molecule == product].time.values
+        print("{:s} & {:.2f} & {:.2f} & {:.2f} \\\\".format(reaction_name, 
+            df_reaction[df_reaction.functional == 'uCCSD'].energy.values[0], 
+            float(reference), 
+            df_reaction[df_reaction.functional == 'uCCSD'].energy.values[0] - float(reference)))
 
         # subtract uCCSD reference
         #df_reaction['error'] = df_reaction.energy - df_reaction.loc[df_reaction.functional == 'uCCSD'].energy.values[0]
@@ -469,6 +477,7 @@ def parse_reactions(reaction_filename, df):
         #dfr = dfr.append(df_reaction[df_reaction.functional != 'uCCSD'], ignore_index = True)
         # Add everything to the dataframe
         dfr = dfr.append(df_reaction, ignore_index = True, sort = True)
+    print()
 
     return dfr
 
@@ -484,6 +493,7 @@ def make_pickles(data_set_name, data_set_path = "../../portfolio_datasets/", pic
     # Try to read the dataset pickle, else make it.
     try:
         mol_df = pd.read_pickle(mol_df_name)
+        print_missing(mol_df, data_set_name)
     except FileNotFoundError:
         filenames = glob.glob(path + "/*.out")
         mol_df = parse_molpro(filenames, data_set_name)
@@ -554,24 +564,23 @@ def main():
     abde12_reac = make_pickles("abde12")
     nhtbh38_reac = make_pickles("nhtbh38")
     htbh38_reac = make_pickles("htbh38")
-    quit()
 
     # combine
     abde12_nhtbh38 = abde12_reac.append(nhtbh38_reac, ignore_index = True)
     df = abde12_nhtbh38.append(htbh38_reac, ignore_index = True)
-    df.to_pickle("pickles/combined_reac.pkl")
+    df.to_pickle("../pickles/combined_reac.pkl")
     print(df.head())
     quit()
-    # Get the slowest reaction
-    df2 = df.loc[(df.functional == "PBE0") & (df.basis == "qzvp") & (df.unrestricted == True)].time
-    slow_name = df.at[df2.idxmax(), "reaction"]
-    slow_df = simplify_timings(df, slow_name)
-    #print(slow_name)
-    slow_df.to_pickle("combined_reac_slow.pkl")
+    ## Get the slowest reaction
+    #df2 = df.loc[(df.functional == "PBE0") & (df.basis == "qzvp") & (df.unrestricted == True)].time
+    #slow_name = df.at[df2.idxmax(), "reaction"]
+    #slow_df = simplify_timings(df, slow_name)
+    ##print(slow_name)
+    #slow_df.to_pickle("combined_reac_slow.pkl")
 
-    # Set cost to match the most expensive reaction
-    df = set_expensive_timings(df)
-    df.to_pickle("pickles/combined_high_cost.pkl")
+    ## Set cost to match the most expensive reaction
+    #df = set_expensive_timings(df)
+    #df.to_pickle("pickles/combined_high_cost.pkl")
 
 
 if __name__ == "__main__":

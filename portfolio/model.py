@@ -68,7 +68,6 @@ class BaseModel(BaseEstimator):
         elif self.scoring_function == 'negative_maximum_absolute_error':
             return - self.score_max
 
-
 class NN(BaseModel):
     """
     Neural network predictor.
