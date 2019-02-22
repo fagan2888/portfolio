@@ -784,6 +784,7 @@ class LinearModel(BaseModel):
         self.portfolio = None
         self._set_positive_constraint(positive_constraint)
         self._set_sum_constraint(sum_constraint)
+        self._set_integer_constraint(integer_constraint)
         self._set_clip_value(clip_value)
 
     def _set_positive_constraint(self, x):
@@ -824,15 +825,16 @@ class LinearModel(BaseModel):
         W = self._fit(x, y)
         # Max do 10 clipping refinements
         for i in range(10):
-            if ((W > self.clip_value) | (W < 1e-12)).all():
+            cond = abs(W)/sum(abs(W)) > self.clip_value
+            if (cond | (abs(W) < 1e-12)).all():
                 break
-            idx = np.where(abs(W)/sum(abs(W)) > self.clip_value)[0]
+            idx = np.where(cond)[0]
             if len(idx) == 0:
                 raise SystemExit("Error occured in fitting model. Try reducing 'clip_value'")
-            w = self._fit(x[:, idx], y[idx])
+            w = self._fit(x[:, idx], y)
             if self.integer_constraint:
                 W = np.zeros(self.n_features, dtype=int)
-                W[idx] = np.round(w)
+                W[idx] = w
             else:
                 W = np.zeros(self.n_features)
                 W[idx] = w
@@ -840,7 +842,7 @@ class LinearModel(BaseModel):
         self._set_portfolio(W)
 
 
-    def _fit(self, X, y):
+    def _fit(self, x, y):
         """
         Minimize |w'x - y|^2, where w is the portfolio weights.
         The constraints sum(x) = 1 and x >= 0 is optionally used
@@ -849,7 +851,7 @@ class LinearModel(BaseModel):
 
         n_features = x.shape[1]
 
-        if self.integer_constraints:
+        if self.integer_constraint:
             w = cvxpy.Variable(n_features, integer=True)
         else:
             w = cvxpy.Variable(n_features)
@@ -869,8 +871,13 @@ class LinearModel(BaseModel):
         result = prob.solve(solver = "ECOS_BB")
         # Proper: (CPLEX), ECOS, ECOS_BB
         # violate constraints: OSPQ
+        if w.value is None:
+            raise SystemExit("Couldn't find solution to requested optimization problem.")
 
-        return w.value
+        if self.integer_constraint:
+            return np.round(w.value)
+        else:
+            return w.value
 
     def _set_portfolio(self, w):
         self.portfolio = w

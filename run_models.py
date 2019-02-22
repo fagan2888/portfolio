@@ -219,8 +219,6 @@ def parse_reaction_dataframe(df):
     # Sort to make it simpler to get the data in the right format
     df.sort_values(['reaction','name'], inplace=True)
     pd.options.mode.chained_assignment = "warn"
-    print(df.head())
-
 
     # Create dataframe with subset not including the reference
     # as well as one that only includes the reference
@@ -389,8 +387,13 @@ if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     # all but x,y is optional
     data = parse_reaction_dataframe(df)
+    print(data['reaction_name'])
 
-    m = LinearModel(clip_value = 1e-3, l2_reg=1e-9, positive_constraint = True)
+    #m = LinearModel(clip_value=0, l2_reg=0, positive_constraint=True, integer_constraint=False)
+    #x = data['energy']
+    #y = data['reference_energy']
+    #m.fit(x,y)
+    quit()
     #z, w = outer_cv(x,y,m,{}, True, 5, 5, 5, 1)[:2]
     #print(w[(w>1e-3) | (w<-1e-3)])
     #print(names[w.argmax()])
