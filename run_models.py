@@ -219,6 +219,7 @@ def parse_reaction_dataframe(df):
     # Sort to make it simpler to get the data in the right format
     df.sort_values(['reaction','name'], inplace=True)
     pd.options.mode.chained_assignment = "warn"
+    print(df.head())
 
     # Create dataframe with subset not including the reference
     # as well as one that only includes the reference
