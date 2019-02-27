@@ -51,7 +51,7 @@ def data_parse(filename, real_filename = None):
     #    print("parsing error for", filename)
     #    return
 
-    if not is_none(real_filename):
+    if real_filename is not None:
         filename = real_filename
 
 
@@ -176,12 +176,6 @@ def parse_dft(lines, single_atom = False):
                 break
     return energy, time, e1, e2, ce
 
-def is_none(x):
-    """
-    Helper function since x == None doesn't work well on arrays. Returns True if x is None.
-    """
-    return isinstance(x, type(None))
-
 def filename_parse(filename):
     """
     Parses filename to get information about the method used.
@@ -232,12 +226,12 @@ def parse_molpro(filenames, data_set):
         # Parse the data files
         args = data_parse(filename)
         # Continue if parsing fails
-        if is_none(args):
+        if args is None:
             continue
         energy, time, e1, e2, ce, mol, func, basis, unrestricted, name = args
         # skip if the calculation has failed
         if None in [energy, time, e1, e2, ce] and '_uCCSD' not in filename \
-            or is_none(energy):
+            or energy is None:
             print(energy, time, e1, e2, ce, filename)
             continue
 
@@ -510,6 +504,31 @@ def make_pickles(data_set_name, data_set_path = "../../portfolio_datasets/", pic
         reac_df.to_pickle(reac_df_name)
     return reac_df
 
+def main():
+    """
+    Create all the reaction pickles
+    """
+    abde12_reac = make_pickles("abde12")
+    nhtbh38_reac = make_pickles("nhtbh38")
+    htbh38_reac = make_pickles("htbh38")
+
+    # combine
+    abde12_nhtbh38 = abde12_reac.append(nhtbh38_reac, ignore_index = True)
+    df = abde12_nhtbh38.append(htbh38_reac, ignore_index = True)
+    df.to_pickle("../pickles/combined_reac.pkl")
+    print(df.head())
+    quit()
+    ## Get the slowest reaction
+    #df2 = df.loc[(df.functional == "PBE0") & (df.basis == "qzvp") & (df.unrestricted == True)].time
+    #slow_name = df.at[df2.idxmax(), "reaction"]
+    #slow_df = simplify_timings(df, slow_name)
+    ##print(slow_name)
+    #slow_df.to_pickle("combined_reac_slow.pkl")
+
+    ## Set cost to match the most expensive reaction
+    #df = set_expensive_timings(df)
+    #df.to_pickle("pickles/combined_high_cost.pkl")
+
 def set_median_timings(df):
     """
     Since we know that some methods should take the same time to
@@ -556,31 +575,6 @@ def simplify_timings(base_df, reaction_name):
                 time = sub_df.loc[(sub_df.reaction == reaction_name)].time.values[0]
                 df.at[sub_df.index, "time"] = time
     return df
-
-def main():
-    """
-    Create all the reaction pickles
-    """
-    abde12_reac = make_pickles("abde12")
-    nhtbh38_reac = make_pickles("nhtbh38")
-    htbh38_reac = make_pickles("htbh38")
-
-    # combine
-    abde12_nhtbh38 = abde12_reac.append(nhtbh38_reac, ignore_index = True)
-    df = abde12_nhtbh38.append(htbh38_reac, ignore_index = True)
-    df.to_pickle("../pickles/combined_reac.pkl")
-    print(df.head())
-    quit()
-    ## Get the slowest reaction
-    #df2 = df.loc[(df.functional == "PBE0") & (df.basis == "qzvp") & (df.unrestricted == True)].time
-    #slow_name = df.at[df2.idxmax(), "reaction"]
-    #slow_df = simplify_timings(df, slow_name)
-    ##print(slow_name)
-    #slow_df.to_pickle("combined_reac_slow.pkl")
-
-    ## Set cost to match the most expensive reaction
-    #df = set_expensive_timings(df)
-    #df.to_pickle("pickles/combined_high_cost.pkl")
 
 
 if __name__ == "__main__":

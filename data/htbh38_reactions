@@ -1,3 +1,8 @@
+# First field is reactant name, second is products
+# third number is reaction type, fourth is charge, 
+# fifth is spin state (1: singlet, 2: doublet)
+# sixths is reference energy in kcal/mol if known
+#
 # 5: Hydrogen transfer.
 #    The direction of the reaction is such that energy is released
 # 6: Hydrogen transfer barrier heights (TS on right hand side)

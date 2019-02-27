@@ -2,6 +2,7 @@
 # third number is reaction type, fourth is charge, 
 # fifth is spin state (1: singlet, 2: doublet)
 # sixths is reference energy in kcal/mol if known
+#
 # 1: dissociation (one species dissociates to two)
 # 2: heavy atom(s) transfer (One atom/group are transfered between two different atoms/groups)
 #    The direction of the reaction is such that energy is released

@@ -1,7 +1,8 @@
 # First field is reactant name, second is products
-# third number is reaction type, fourth is charge, 
+# third number is reaction type, fourth is charge,
 # fifth is spin state (1: singlet, 2: doublet)
 # sixths is reference energy in kcal/mol if known
+#
 # 1: dissociation (one species dissociates to two)
 C2H6O, CH3O CH3, 1, 0, 1, 89.79
 C2H6, CH3 CH3, 1, 0, 1, 97.39

@@ -20,7 +20,7 @@ class BaseModel(BaseEstimator):
     """
     Base class for all predictive models.
     """
-    def __init__(self, scoring_function = 'root_mean_squared_error', **kwargs):
+    def __init__(self, scoring_function='mean_absolute_error', **kwargs):
         self._set_scoring_function(scoring_function)
         # Placeholder variables
         self.n_features = None
@@ -831,6 +831,8 @@ class LinearModel(BaseModel):
             idx = np.where(cond)[0]
             if len(idx) == 0:
                 raise SystemExit("Error occured in fitting model. Try reducing 'clip_value'")
+            elif len(idx) == 1:
+                break
             w = self._fit(x[:, idx], y)
             if self.integer_constraint:
                 W = np.zeros(self.n_features, dtype=int)
@@ -842,14 +844,14 @@ class LinearModel(BaseModel):
         self._set_portfolio(W)
 
 
-    def _fit(self, x, y):
+    def _fit(self, X, y):
         """
-        Minimize |w'x - y|^2, where w is the portfolio weights.
-        The constraints sum(x) = 1 and x >= 0 is optionally used
+        Minimize |w'X - y|^2, where w is the portfolio weights.
+        The constraints sum(w) = 1 and w >= 0 is optionally used
         as well as a constraint requiring w to be integers.
         """
 
-        n_features = x.shape[1]
+        n_features = X.shape[1]
 
         if self.integer_constraint:
             w = cvxpy.Variable(n_features, integer=True)
@@ -857,9 +859,9 @@ class LinearModel(BaseModel):
             w = cvxpy.Variable(n_features)
         A = cvxpy.Constant(np.ones((1, n_features)))
         # Set objective
-        obj_fun = cvxpy.sum_squares(x * w - y) / self.n_samples
+        obj_fun = cvxpy.sum_squares(X * w - y) / self.n_samples
         if self.l2_reg > 0:
-            obj_fun += self.l2_reg * cvxpy.sum_squares(w)
+            obj_fun += self.l2_reg * cvxpy.norm(w, p=1) / self.n_samples #cvxpy.sum_squares(w)
         objective = cvxpy.Minimize(obj_fun)
         # Set constraints
         constraints = []
