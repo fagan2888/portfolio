@@ -3,14 +3,91 @@ import glob
 import pandas as pd
 import sys
 
+
+
+
+
+def catch_convergence_errors(filename, lines):
+    # Density corrected will always not converge
+    dc = False
+    if 'dc' in filename:
+        dc = True
+
+    start_line = None
+    for i, line in enumerate(lines[::-1]):
+        if 'Orbital' in line:
+            tokens = line.split()
+            if "." not in tokens[1]:
+                continue
+            subtokens = tokens[1].split(".")
+            try:
+                np.asarray(subtokens, dtype=int)
+            except ValueError:
+                continue
+            target = float(tokens[-1][:-1])
+            current = float(tokens[-3])
+            if abs(target-current) > 0.3:
+                print("1. Possible error in %s" % filename)
+                return
+        if "No convergence" in line and dc == False:
+            print("2. Possible error in %s" % filename)
+            return
+        if "NO CONVERGENCE" in line:
+            print("3. Possible error in %s" % filename)
+            return
+        if "DDIFF" in line or "SQ.NORM" in line:
+            start_line = len(lines) - i
+            break
+
+    energy = []
+    for line in lines[start_line:]:
+        tokens = line.split()
+        if len(tokens) < 3:
+            pass
+        elif tokens[0] == "1":
+            e_base = float(tokens[3])
+            energy.append(e_base)
+            continue
+        elif "Orbital" in line or "nitord" in line or "gthresh" in line:
+            continue
+        else:
+            try:
+                e = float(tokens[3])
+            except:
+                print("7. Possible error in %s" % filename)
+                return
+            if abs(e - e_base) < 0.1:
+                e_base = e
+                energy.append(e_base)
+            elif (e - e_base) < 0 and abs(e - e_base) < 15:
+                e_base = e
+                energy.append(e_base)
+            continue
+        if 'e' not in locals() and dc == False and 'uCCSD' not in filename and 'DCSD' not in filename:
+            print("5. Possible error in %s" % filename)
+            return
+        # Check that energy didn't jump up somewhere
+        if 'e' in locals() and abs(e - e_base) > 0.1:
+            print("8. Possible error in %s" % filename)
+        # Check that last energy doesn't change much
+        if len(energy) > 1 and abs(energy[-1] - energy[-2]) > 2e-4:
+            print("6. Possible error in %s" % filename)
+            return
+        break
+
+
 def data_parse(filename, real_filename = None):
     """
     Opens a molpro output file and parses the energy and computation time.
     """
 
-    #try:
+
     with open(filename) as f:
         lines = f.readlines()
+
+    #Try and catch some convergence issues that is difficult to find
+    catch_convergence_errors(filename, lines)
+
     if "DCSD" in filename:
         # ccsd tends to crash with H since there's only one electron
         if filename.split("/")[-1].startswith("H-_") \
@@ -47,9 +124,6 @@ def data_parse(filename, real_filename = None):
     else:
         print("parsing error for", filename)
         quit()
-    #except:
-    #    print("parsing error for", filename)
-    #    return
 
     if real_filename is not None:
         filename = real_filename
@@ -345,6 +419,9 @@ def parse_molpro(filenames, data_set):
                         quit(("Missed something", func, mol, basis))
                     continue
                 for unres in True, False:
+                    # There's no unrestricted dispersion corrected functionals
+                    if unres and "D3" in func:
+                        continue
                     # The DCSD only have select basis sets.
                     if func == 'DCSD':
                         if basis in ['qzvp', 'avtz', 'tzvp', 'avdz']:
@@ -516,6 +593,7 @@ def main():
     abde12_nhtbh38 = abde12_reac.append(nhtbh38_reac, ignore_index = True)
     df = abde12_nhtbh38.append(htbh38_reac, ignore_index = True)
     df.to_pickle("../pickles/combined_reac.pkl")
+
     print(df.head())
     quit()
     ## Get the slowest reaction

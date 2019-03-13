@@ -19,13 +19,53 @@ dirname = os.path.dirname(os.path.realpath(__file__))
 source_path = dirname + "/portfolio"
 sys.path.append(source_path)
 
-from portfolio.model import SingleMethod, LinearModel#, Markowitz, NN
+from portfolio.model import SingleMethod, LinearModel, Markowitz#, NN
 
 #def calc_mean_and_var(x):
 #    vars_ = np.var(x, ddof = 1, axis = 1)
 #    means = np.mean(x, axis = 1)
 #    alphas = vars_ / sum(vars_)
 #    mean = sum(means * alphas)
+
+def check_for_errors(data):
+    """
+    Simple check for big errors in the data
+    """
+    dy = data['energy']-data['reference_energy'].reshape(-1,1)
+    for i in range(data['reaction_name'].size):
+        func_outliers = []
+        for func in np.unique(data['functional']):
+            idx = np.where(data['functional'] == func)[0]
+            energy_func = dy[i, idx]
+            median = np.median(energy_func)
+            ## Find outliers
+            outliers = np.where(abs(energy_func - median) > 100)[0]
+            if len(outliers) == 0:
+                continue
+            func_outliers.extend(list(data['method_name'][idx][outliers]))
+        basis_outliers = []
+        for basis in np.unique(data['basis']):
+            idx = np.where(data['basis'] == basis)[0]
+            energy_func = dy[i, idx]
+            median = np.median(energy_func)
+            ## Find outliers
+            outliers = np.where(abs(energy_func - median) > 100)[0]
+            if len(outliers) == 0:
+                continue
+            basis_outliers.extend(list(data['method_name'][idx][outliers]))
+        joint_outliers = list(set(basis_outliers) & set(func_outliers))
+        if len(joint_outliers) == 0:
+            continue
+        print(data['reaction_name'][i], data['dataset'][i], joint_outliers)
+        func = []
+        basis = []
+        for name in joint_outliers:
+            if 'u-' in name:
+                name = name[2:]
+            f, b = name.split("/")
+            func.append(f)
+            basis.append(b)
+        print(set(func), set(basis))
 
 
 def run_SingleMethod(data):
@@ -37,12 +77,59 @@ def run_SingleMethod(data):
     outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=True)
     run_method(data, model, cv_params, "pickles/single_method_all_reactions_results.pkl", outer_splits, inner_splits)
 
-# TODO fix l2_reg to l1_reg
 def run_LinearModel(data):
-    model = LinearModel(l2_reg = 1e2, positive_constraint=False, clip_value=1e-4)
-    cv_params = {}
-    outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=False)
-    run_method(data, model, cv_params, "pickles/test.pkl", outer_splits, inner_splits)
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=False)
+    cv_params = {'l1_reg': [0] + [10**x for x in range(-9,4)]}
+    outer_splits_same, inner_splits_same = leave_one_out_cv(data, include_other_reaction_types=False)
+    outer_splits_all, inner_splits_all = leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=True)
+    run_method(data, model, cv_params, "pickles/linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=True,
+            integer_constraint=False)
+    cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
+    run_method(data, model, cv_params, "pickles/linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+
+def run_Markowitz(data):
+    model = Markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=False)
+    cv_params = {'l1_reg': [0] + [10**x for x in range(-9,4)]}
+    outer_splits_same, inner_splits_same = leave_one_out_cv(data, include_other_reaction_types=False)
+    outer_splits_all, inner_splits_all = leave_one_out_cv(data, include_other_reaction_types=True)
+    print(1)
+    run_method(data, model, cv_params, "pickles/markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(2)
+    run_method(data, model, cv_params, "pickles/markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = Markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=True)
+    print(3)
+    run_method(data, model, cv_params, "pickles/markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(4)
+    run_method(data, model, cv_params, "pickles/markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = Markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=True,
+            integer_constraint=False)
+    cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
+    print(5)
+    run_method(data, model, cv_params, "pickles/markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(6)
+    run_method(data, model, cv_params, "pickles/markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
 
 def run_method(data, model, cv_params, path, outer_splits, inner_splits):
@@ -74,6 +161,17 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     errors = []
     cv_portfolios = []
     all_cv_params = []
+
+    #dy = data['energy']-data['reference_energy'].reshape(-1,1)
+    #idx = np.where(abs(dy) > 400)
+    #for reaction, method in zip(*idx):
+    #    print(data['dataset'][reaction], data['reaction_name'][reaction], data['method_name'][method], dy[reaction,method])
+    #idx = np.where(abs(dy) > 200)
+    #for reaction, method in zip(*idx):
+    #    if 'sto-3g' in data['method_name'][method]:
+    #        continue
+    #    print(data['dataset'][reaction], data['reaction_name'][reaction], data['method_name'][method], dy[reaction,method])
+
     for subset in subsets:
         # Get best hyperparams from cv
         error, cv_portfolio, best_cv_params = \
@@ -88,15 +186,6 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
         errors.append(error)
         cv_portfolios.append(portfolio)
         all_cv_params.append(best_cv_params)
-        for i in range(len(error)):
-            print(abs(error[i]), data['reaction_name'][i])
-
-        reaction_idx = np.where(data['reaction_name'] == "CH3+H2->TS3")[0]
-        dy = data['energy']-data['reference_energy'].reshape(-1,1)
-        idx = np.where(abs(dy[reaction_idx, subset]) > 100)[0]
-        print(data['method_name'][subset][idx])
-        print(np.mean(abs(error)))
-        print(get_best_params_and_model(x[:,subset], y, model, best_cv_params, data['method_name'][subset])[2:])
 
     d['errors'] = np.asarray(errors)
     d['cv_portfolios'] = np.asarray(cv_portfolios)
@@ -471,14 +560,17 @@ def get_best_params_and_model(x, y, model, best_cv_params, names):
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
+    ## check for outliers
+    #check_for_errors(data)
     #run_SingleMethod(data)
-    run_LinearModel(data)
-    quit()
-    #m = LinearModel(clip_value=0, l2_reg=0, positive_constraint=True, integer_constraint=False)
+    #run_LinearModel(data)
+    #quit()
+    #m = LinearModel(clip_value=0, l1_reg=1e-9, positive_constraint=False, integer_constraint=False)
     #x = data['energy']
     #y = data['reference_energy']
     #m.fit(x,y)
-    quit()
+    #print(m.portfolio[:3], np.argmax(m.portfolio))
+    #print(m.score(x,y))
     #z, w = outer_cv(x,y,m,{}, True, 5, 5, 5, 1)[:2]
     #print(w[(w>1e-3) | (w<-1e-3)])
     #print(names[w.argmax()])

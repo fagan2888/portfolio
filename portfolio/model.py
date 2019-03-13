@@ -28,14 +28,14 @@ class BaseModel(BaseEstimator):
 
         # There should be no arguments that is not named
         if kwargs != {}:
-            raise InputError("Got unknown input %s to the class %s" % (kwargs, self.__class__.__name__))
+            raise SystemExit("Got unknown input %s to the class %s" % (kwargs, self.__class__.__name__))
 
     def _set_scoring_function(self, scoring_function):
         if not is_string(scoring_function):
-            raise InputError("Expected a string for variable 'scoring_function'. Got %s" % str(scoring_function))
+            raise SystemExit("Expected a string for variable 'scoring_function'. Got %s" % str(scoring_function))
         if scoring_function.lower() not in ['mean_absolute_error', 'root_mean_squared_error', 'maximum_absolute_error',
             'negative_mean_absolute_error', 'negative_mean_squared_error', 'negative_maximum_absolute_error']:
-            raise InputError("Unknown scoring functions '%s'" % str(scoring_function))
+            raise SystemExit("Unknown scoring functions '%s'" % str(scoring_function))
 
         self.scoring_function = scoring_function
 
@@ -752,7 +752,6 @@ class SingleMethod(BaseModel):
         """
 
         self.n_features = x.shape[1]
-        self.n_samples = x.shape[0]
 
         if self.loss == "mae":
             acc = np.mean(abs(x - y[:,None]), axis=0)
@@ -773,14 +772,14 @@ class SingleMethod(BaseModel):
 
 class LinearModel(BaseModel):
     """
-    Least square solver
+    Lasso solver
     """
 
-    def __init__(self, l2_reg = 0, positive_constraint = True, sum_constraint = True,
-            integer_constraint = False, clip_value = 0, **kwargs):
+    def __init__(self, l1_reg=0, positive_constraint=True, sum_constraint=True,
+            integer_constraint=False, clip_value=0, **kwargs):
         super(LinearModel, self).__init__(**kwargs)
 
-        self._set_l2_reg(l2_reg)
+        self._set_l1_reg(l1_reg)
         self.portfolio = None
         self._set_positive_constraint(positive_constraint)
         self._set_sum_constraint(sum_constraint)
@@ -802,10 +801,10 @@ class LinearModel(BaseModel):
             raise InputError("Expected boolean value for parameter 'integer_constraint'. Got %s" % str(x))
         self.integer_constraint = x
 
-    def _set_l2_reg(self, x):
+    def _set_l1_reg(self, x):
         if not is_positive_or_zero(x):
-            raise InputError("Expected positive numeric value for parameter 'l2_reg'. Got %s" % str(x))
-        self.l2_reg = x
+            raise InputError("Expected positive numeric value for parameter 'l1_reg'. Got %s" % str(x))
+        self.l1_reg = x
 
     def _set_clip_value(self, x):
         if not is_positive_or_zero(x):
@@ -823,26 +822,28 @@ class LinearModel(BaseModel):
 
         # initial run
         W = self._fit(x, y)
-        # Max do 10 clipping refinements
-        for i in range(10):
-            cond = abs(W)/sum(abs(W)) > self.clip_value
-            if (cond | (abs(W) < 1e-12)).all():
-                break
-            idx = np.where(cond)[0]
-            if len(idx) == 0:
-                raise SystemExit("Error occured in fitting model. Try reducing 'clip_value'")
-            elif len(idx) == 1:
-                break
-            w = self._fit(x[:, idx], y)
-            if self.integer_constraint:
-                W = np.zeros(self.n_features, dtype=int)
-                W[idx] = w
-            else:
-                W = np.zeros(self.n_features)
-                W[idx] = w
+
+        # Do clipping if positive constraint, since l1 regulization will always be constant
+        if self.clip_value > 0 and self.positive_constraint == True and self.sum_constraint == True:
+            # Max do 10 clipping refinements
+            for i in range(10):
+                cond = abs(W)/sum(abs(W)) > self.clip_value
+                if (cond | (abs(W) < 1e-12)).all():
+                    break
+                idx = np.where(cond)[0]
+                if len(idx) == 0:
+                    raise SystemExit("Error occured in fitting model. Try reducing 'clip_value'")
+                elif len(idx) == 1:
+                    break
+                w = self._fit(x[:, idx], y)
+                if self.integer_constraint:
+                    W = np.zeros(self.n_features, dtype=int)
+                    W[idx] = w
+                else:
+                    W = np.zeros(self.n_features)
+                    W[idx] = w
 
         self._set_portfolio(W)
-
 
     def _fit(self, X, y):
         """
@@ -860,8 +861,8 @@ class LinearModel(BaseModel):
         A = cvxpy.Constant(np.ones((1, n_features)))
         # Set objective
         obj_fun = cvxpy.sum_squares(X * w - y) / self.n_samples
-        if self.l2_reg > 0:
-            obj_fun += self.l2_reg * cvxpy.norm(w, p=1) / self.n_samples #cvxpy.sum_squares(w)
+        if self.l1_reg > 0 and (self.positive_constraint == False or self.sum_constraint == False):
+            obj_fun += self.l1_reg * cvxpy.norm(w, p=1) / self.n_samples #cvxpy.sum_squares(w)
         objective = cvxpy.Minimize(obj_fun)
         # Set constraints
         constraints = []
@@ -874,7 +875,9 @@ class LinearModel(BaseModel):
         # Proper: (CPLEX), ECOS, ECOS_BB
         # violate constraints: OSPQ
         if w.value is None:
-            raise SystemExit("Couldn't find solution to requested optimization problem.")
+            print("Couldn't find solution to requested optimization problem.")
+            random_weights = np.ones(n_features)
+            return random_weights / sum(random_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
@@ -888,92 +891,78 @@ class LinearModel(BaseModel):
         return np.dot(x,self.portfolio)
 
 
-## TODO make sure that the cross-validation works without modifying 
-## get_params and set_params in the BaseEstimator
-#class Markowitz(LinearModel):
-#    """
-#    Construct Markowitz portfolio. Is similar to a LinearModel but with
-#    slightly different objective function.
-#    """
-#
-#    def __init__(self, method = 'min_expected_squared_loss', upper_bound = 0.5, **kwargs):
-#        super(Markowitz, self).__init__(**kwargs)
-#        self._set_method(method)
-#
-#    def _set_upper_bound(self, x):
-#        if not is_positive(x):
-#            raise InputError("Expected positive float for variable 'upper_bound'. Got %s" % str(x))
-#        self.upper_bound = x
-#
-#    def _set_method(self, x):
-#        if x not in ['zero_mean_min_variance', 'min_expected_squared_loss', 'mean_upper_bound_min_variance']:
-#            raise InputError("Unknown method %s" % x)
-#        self.method = x
-#
-#    def _fit(self, X, y, idx = None):
-#        """
-#        Minimize x'mm'x + x'Cx, where C is the covariance matrix, m being the asset means and x is the portfolio weights.
-#        The constraints sum(x) = 1 is used.
-#        Optionally the constraint x >= 0 is used if self.positive_constraint == False.
-#        """
-#
-##        lol = np.argmin(self.cost)
-##        weights = np.zeros(self.n_assets)
-##        weights[:] = 1e-9
-##        weights[lol] = 1
-##        weights /= weights.sum()
-##
-##        # objective
-##        P = cvxopt.matrix(E_2 + alpha * np.identity(self.n_assets))
-##        q = cvxopt.matrix(0.0, (self.n_assets,1))
-##
-#
-#        if is_none(idx):
-#            x = X - y[:, None]
-#            cost = self.cost
-#        else:
-#            x = X[:, idx] - y[:, None]
-#            cost = self.cost[idx]
-#
-#        means = x.mean(0)
-#        # Add small number in diagonal to avoid singular values
-#        cov = np.cov(x, ddof = 1, rowvar = False) + 1e-6 * np.identity(x.shape[1])
-#
-#        self.n_samples = x.shape[0]
-#        self.n_features = x.shape[1]
-#
-#        w = cvxpy.Variable(self.n_features)
-#        A = cvxpy.Constant(np.ones((1, self.n_features)))
-#        # Set objective
-#        if self.method == 'min_expected_squared_loss':
-#            obj_fun = cvxpy.quad_form(w,means[:,None] * means[None, :] + cov)
-#        else:
-#            obj_fun = cvxpy.quad_form(w,cov)
-#
-#        if self.l2_reg > 0:
-#            obj_fun += self.l2_reg * cvxpy.sum_squares(w)
-#        if self.cost_reg > 0 and not is_none(self.cost):
-#            if not self.positive_constraint:
-#                raise NotImplementedError("Cost constraints only work with positive constraint in this model")
-#            # Could also set this as a constraint
-#            obj_fun += self.cost_reg * cvxpy.sum(w * cost)
-#        objective = cvxpy.Minimize(obj_fun)
-#        # Set constraints
-#        constraints = [cvxpy.sum(w) == 1]
-#        if self.method == 'zero_mean_min_variance':
-#            constraints.append(cvxpy.sum(w*means) == 0)
-#        elif self.method == 'mean_upper_bound_min_variance':
-#            constraints.append(cvxpy.sum_squares(w * means) <= self.upper_bound ** 2)
-#        if self.positive_constraint:
-#            constraints.append(w >= 0)
-#        prob = cvxpy.Problem(objective, constraints)
-#        result = prob.solve(solver = "ECOS")
-#        # Proper: (CPLEX), ECOS, ECOS_BB
-#        # violate constraints: OSPQ
-#
-#        if is_none(idx):
-#            return w.value
-#        else:
-#            W = np.zeros(X.shape[1])
-#            W[idx] = w.value
-#            return W
+class Markowitz(LinearModel):
+    """
+    Construct Markowitz portfolio. Is similar to a LinearModel but with
+    slightly different objective function.
+    """
+
+    def __init__(self, method='min_expected_squared_loss', upper_bound=0.5, l1_reg=0, clip_value=0, **kwargs):
+        super(Markowitz, self).__init__(l1_reg=l1_reg, clip_value=clip_value, **kwargs)
+        self._set_method(method)
+        self._set_upper_bound(upper_bound)
+
+        if self.sum_constraint == False:
+            raise SystemExit("The Markowitz method requires `sum_constraint == True`")
+
+    def _set_upper_bound(self, x):
+        if not is_positive(x):
+            raise SystemExit("Expected positive float for variable 'upper_bound'. Got %s" % str(x))
+        self.upper_bound = x
+
+    def _set_method(self, x):
+        if x not in ['zero_mean_min_variance', 'min_expected_squared_loss', 'mean_upper_bound_min_variance']:
+            raise SystemExit("Unknown method %s" % x)
+        self.method = x
+
+    def _fit(self, X, y):
+        """
+        Minimize x'mm'x + x'Cx, or variants hereof, where C is the covariance matrix,
+        m being the asset means and x is the portfolio weights.
+        The constraints sum(w) = 1 and w >= 0 is optionally used
+        as well as a constraint requiring w to be integers.
+        """
+
+        n_features = X.shape[1]
+
+        # Get the error for all methods
+        x = X - y[:, None]
+        # Get means
+        means = x.mean(0)
+        # Get covaraince and add small number in diagonal to avoid singular values
+        cov = np.cov(x, ddof = 1, rowvar = False) + 1e-6 * np.identity(x.shape[1])
+
+        if self.integer_constraint:
+            w = cvxpy.Variable(n_features, integer=True)
+        else:
+            w = cvxpy.Variable(n_features)
+        A = cvxpy.Constant(np.ones((1, n_features)))
+        # Set objective
+        if self.method == 'min_expected_squared_loss':
+            obj_fun = cvxpy.quad_form(w,means[:,None] * means[None, :] + cov) / self.n_samples
+        else:
+            obj_fun = cvxpy.quad_form(w,cov) / self.n_samples
+        if self.l1_reg > 0 and (self.positive_constraint == False or self.sum_constraint == False):
+            obj_fun += self.l1_reg * cvxpy.norm(w, p=1) / self.n_samples #cvxpy.sum_squares(w)
+        objective = cvxpy.Minimize(obj_fun)
+        # Set constraints
+        constraints = [cvxpy.sum(w) == 1]
+        if self.positive_constraint:
+            constraints.append(w >= 0)
+        if self.method == 'zero_mean_min_variance':
+            constraints.append(cvxpy.sum(w*means) == 0)
+        elif self.method == 'mean_upper_bound_min_variance':
+            constraints.append(cvxpy.sum_squares(w * means) <= self.upper_bound ** 2)
+        prob = cvxpy.Problem(objective, constraints)
+        result = prob.solve(solver = "ECOS_BB")
+        # Proper: (CPLEX), ECOS, ECOS_BB
+        # violate constraints: OSPQ
+        if w.value is None:
+            print("Couldn't find solution to requested optimization problem.")
+            random_weights = np.ones(n_features)
+            return random_weights / sum(random_weights)
+
+        if self.integer_constraint:
+            return np.round(w.value)
+        else:
+            return w.value
