@@ -192,6 +192,7 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     d['cv_params'] = all_cv_params
     d['reaction_names'] = data['reaction_name']
     d['method_names'] = data['method_name']
+    d['dataset'] = data['dataset']
 
     # Dump the results in a pickle
     with open(path, 'wb') as f:
@@ -395,6 +396,7 @@ def get_portfolio_details(x, names):
 def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
     """
     Do outer cross validation to get the prediction errors of a method.
+    Could probably be replaced with cross_val_score or similar.
     """
 
     best_cv_params = []
@@ -411,7 +413,8 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
         test_x, test_y = x[test_idx].reshape(1,-1), y[test_idx] # Remove reshape if not using leave one out
         if len(params) > 0:
             cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
-                    return_train_score = False, cv = sklearn.model_selection.PredefinedSplit(inner_cv_splits[i]))
+                    return_train_score = False, cv = sklearn.model_selection.PredefinedSplit(inner_cv_splits[i]),
+                    n_jobs=1)
             cvmod.fit(train_x, train_y)
             cv_portfolios.append(cvmod.best_estimator_.portfolio)
             best_cv_params.append(cvmod.best_params_)

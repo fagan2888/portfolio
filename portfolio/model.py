@@ -871,13 +871,20 @@ class LinearModel(BaseModel):
         if self.sum_constraint:
             constraints.append(cvxpy.sum(w) == 1)
         prob = cvxpy.Problem(objective, constraints)
-        result = prob.solve(solver = "ECOS_BB")
-        # Proper: (CPLEX), ECOS, ECOS_BB
-        # violate constraints: OSPQ
+        if self.integer_constraint:
+            solver = "ECOS_BB"
+        else:
+            solver = "ECOS"
+
+        try:
+            result = prob.solve(solver = solver)
+        except cvxpy.error.SolverError:
+            w.value = None
+
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
-            random_weights = np.ones(n_features)
-            return random_weights / sum(random_weights)
+            uniform_weights = np.ones(n_features)
+            return uniform_weights / sum(random_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
@@ -954,13 +961,20 @@ class Markowitz(LinearModel):
         elif self.method == 'mean_upper_bound_min_variance':
             constraints.append(cvxpy.sum_squares(w * means) <= self.upper_bound ** 2)
         prob = cvxpy.Problem(objective, constraints)
-        result = prob.solve(solver = "ECOS_BB")
-        # Proper: (CPLEX), ECOS, ECOS_BB
-        # violate constraints: OSPQ
+        if self.integer_constraint:
+            solver = "ECOS_BB"
+        else:
+            solver = "ECOS"
+
+        try:
+            result = prob.solve(solver = solver)
+        except cvxpy.error.SolverError:
+            w.value = None
+
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
-            random_weights = np.ones(n_features)
-            return random_weights / sum(random_weights)
+            uniform_weights = np.ones(n_features)
+            return uniform_weights / sum(random_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
