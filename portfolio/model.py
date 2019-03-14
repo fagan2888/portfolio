@@ -832,7 +832,10 @@ class LinearModel(BaseModel):
                     break
                 idx = np.where(cond)[0]
                 if len(idx) == 0:
-                    raise SystemExit("Error occured in fitting model. Try reducing 'clip_value'")
+                    print("Warning: Error occured in fitting model. Try reducing 'clip_value'")
+                    W = np.ones(self.n_features)
+                    W /= sum(W)
+                    break
                 elif len(idx) == 1:
                     break
                 w = self._fit(x[:, idx], y)
