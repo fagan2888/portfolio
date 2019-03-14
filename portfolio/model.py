@@ -887,7 +887,7 @@ class LinearModel(BaseModel):
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
             uniform_weights = np.ones(n_features)
-            return uniform_weights / sum(random_weights)
+            return uniform_weights / sum(uniform_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
@@ -977,7 +977,7 @@ class Markowitz(LinearModel):
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
             uniform_weights = np.ones(n_features)
-            return uniform_weights / sum(random_weights)
+            return uniform_weights / sum(uniform_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
