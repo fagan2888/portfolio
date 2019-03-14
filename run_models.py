@@ -71,11 +71,15 @@ def check_for_errors(data):
 def run_SingleMethod(data):
     model = SingleMethod()
     cv_params = {'loss': ('mae', 'rmsd', 'max')}
-    # Have to be specific with splitting, due to high correlations etc.
     outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=False)
-    run_method(data, model, cv_params, "pickles/single_method_same_reactions_results.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/single_method_same_reactions_result.pkl", outer_splits, inner_splits)
     outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=True)
-    run_method(data, model, cv_params, "pickles/single_method_all_reactions_results.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/single_method_all_reactions_result.pkl", outer_splits, inner_splits)
+    # Less strict splitting
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
+    run_method(data, model, cv_params, "pickles/less_strict_single_method_same_reactions_result.pkl", outer_splits, inner_splits)
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/less_strict_single_method_all_reactions_result.pkl", outer_splits, inner_splits)
 
 def run_LinearModel(data):
     model = LinearModel(l1_reg = 0,
@@ -85,21 +89,57 @@ def run_LinearModel(data):
     cv_params = {'l1_reg': [0] + [10**x for x in range(-9,4)]}
     outer_splits_same, inner_splits_same = leave_one_out_cv(data, include_other_reaction_types=False)
     outer_splits_all, inner_splits_all = leave_one_out_cv(data, include_other_reaction_types=True)
+    print(1)
     run_method(data, model, cv_params, "pickles/linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(2)
     run_method(data, model, cv_params, "pickles/linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=True)
+    print(3)
     run_method(data, model, cv_params, "pickles/linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(4)
     run_method(data, model, cv_params, "pickles/linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=True,
             integer_constraint=False)
     cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
+    print(5)
     run_method(data, model, cv_params, "pickles/linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(6)
     run_method(data, model, cv_params, "pickles/linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+
+    # Less strict splitting
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=False)
+    cv_params = {'l1_reg': [0] + [10**x for x in range(-9,4)]}
+    outer_splits_same, inner_splits_same = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
+    outer_splits_all, inner_splits_all = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    print(7)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(8)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=True)
+    print(9)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(10)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = LinearModel(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=True,
+            integer_constraint=False)
+    cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
+    print(11)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(12)
+    run_method(data, model, cv_params, "pickles/less_strict_linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
 def run_Markowitz(data):
     model = Markowitz(l1_reg = 0,
@@ -131,6 +171,35 @@ def run_Markowitz(data):
     print(6)
     run_method(data, model, cv_params, "pickles/markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
+    # Less strict splitting
+    model = less_strict_markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=False)
+    cv_params = {'l1_reg': [0] + [10**x for x in range(-9,4)]}
+    outer_splits_same, inner_splits_same = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
+    outer_splits_all, inner_splits_all = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    print(7)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(8)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = less_strict_markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=False,
+            integer_constraint=True)
+    print(9)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(10)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = less_strict_markowitz(l1_reg = 0,
+            clip_value = 1e-6,
+            positive_constraint=True,
+            integer_constraint=False)
+    cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
+    print(11)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    print(12)
+    run_method(data, model, cv_params, "pickles/less_strict_markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
 def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     """
@@ -458,6 +527,89 @@ def get_best_params(params):
 
     return d
 
+def less_strict_leave_one_out_cv(data, include_other_reaction_types=False,
+        include_other_spin_states=True, include_other_charge_states=True,
+        include_other_datasets=True):
+    """
+    Attempts to do create leave one out cv splits,
+    where no TS in the test reaction
+    can be present in the reactions of the training set.
+    """
+    def share_names(sub_names1, sub_names2, same_reaction_set):
+        """
+        Check if the same TS is present in both subsets.
+        """
+        for name1 in sub_names1:
+            if "TS" not in name1:
+                continue
+            for name2 in sub_names2:
+                if "TS" not in name2:
+                    continue
+                if name1 == name2:
+                    if same_reaction_set:
+                        continue
+                    else:
+                        return True
+        return False
+
+
+    n = len(data['reaction_name'])
+
+    splits = np.ones((n,n), dtype=bool) ^ np.diag(np.ones(n, dtype=bool))
+
+    for i, name1 in enumerate(data['reaction_name']):
+        # Get molecule names
+        sub_names1 = re.split('\+|->', name1)
+        rtype1 = data['reaction_class'][i]
+        spin1 = data['spin'][i]
+        charge1 = data['charge'][i]
+        dataset1 = data['dataset'][i]
+        for j, name2 in enumerate(data['reaction_name'][i+1:]):
+            k = i+j+1
+            sub_names2 = re.split('\+|->', name2)
+            rtype2 = data['reaction_class'][k]
+            if not include_other_reaction_types and rtype1 != rtype2:
+                splits[i,k] = False
+                splits[k,i] = False
+                continue
+            spin2 = data['spin'][k]
+            if not include_other_spin_states and spin1 != spin2:
+                splits[i,k] = False
+                splits[k,i] = False
+                continue
+            charge2 = data['charge'][k]
+            if not include_other_charge_states and charge1 != charge2:
+                splits[i,k] = False
+                splits[k,i] = False
+                continue
+            dataset2 = data['dataset'][k]
+            if not include_other_datasets and dataset1 != dataset2:
+                splits[i,k] = False
+                splits[k,i] = False
+                continue
+            flag = share_names(sub_names1, sub_names2, (dataset1 == dataset2))
+            splits[i,k] = (not flag)
+            splits[k,i] = (not flag)
+
+    outer_splits = [(np.where(splits[i])[0], i) for i in range(n)]
+
+    inner_splits = []
+
+    for i in range(n):
+        indices = outer_splits[i][0]
+        class1 = data['reaction_class'][i]
+        classes = data['reaction_class'][indices]
+        this_split = np.zeros(classes.size, dtype=int)
+        this_split[np.where(classes != class1)[0]] = -1
+        same_class_indices = np.where(classes == class1)[0]
+        test_splits = [test for train,test in 
+                sklearn.model_selection.KFold(3, shuffle=True).split(same_class_indices)]
+        for j in range(1,3):
+            this_split[same_class_indices[test_splits[j]]] = j
+
+        inner_splits.append(this_split)
+
+    return outer_splits, inner_splits
 
 def leave_one_out_cv(data, include_other_reaction_types=False,
         include_other_spin_states=True, include_other_charge_states=True,
@@ -565,7 +717,7 @@ if __name__ == "__main__":
     data = parse_reaction_dataframe(df)
     ## check for outliers
     #check_for_errors(data)
-    #run_SingleMethod(data)
+    run_SingleMethod(data)
     #run_LinearModel(data)
     #quit()
     #m = LinearModel(clip_value=0, l1_reg=1e-9, positive_constraint=False, integer_constraint=False)

@@ -884,7 +884,7 @@ class LinearModel(BaseModel):
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
             uniform_weights = np.ones(n_features)
-            return uniform_weights / sum(random_weights)
+            return uniform_weights / sum(uniform_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
@@ -904,8 +904,11 @@ class Markowitz(LinearModel):
     slightly different objective function.
     """
 
-    def __init__(self, method='min_expected_squared_loss', upper_bound=0.5, l1_reg=0, clip_value=0, **kwargs):
-        super(Markowitz, self).__init__(l1_reg=l1_reg, clip_value=clip_value, **kwargs)
+    def __init__(self, method='min_expected_squared_loss', upper_bound=0.5, l1_reg=0, clip_value=0, 
+            sum_constraint=True, integer_constraint=False, positive_constraint=True):
+        super(Markowitz, self).__init__(l1_reg=l1_reg, clip_value=clip_value, 
+                sum_constraint=sum_constraint, integer_constraint=integer_constraint,
+                positive_constraint=positive_constraint)
         self._set_method(method)
         self._set_upper_bound(upper_bound)
 
@@ -974,7 +977,7 @@ class Markowitz(LinearModel):
         if w.value is None:
             print("Couldn't find solution to requested optimization problem.")
             uniform_weights = np.ones(n_features)
-            return uniform_weights / sum(random_weights)
+            return uniform_weights / sum(uniform_weights)
 
         if self.integer_constraint:
             return np.round(w.value)
