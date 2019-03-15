@@ -827,7 +827,7 @@ class LinearModel(BaseModel):
         if self.clip_value > 0 and self.positive_constraint == True and self.sum_constraint == True:
             # Max do 10 clipping refinements
             for i in range(10):
-                cond = abs(W)/sum(abs(W)) > self.clip_value
+                cond = abs(W) > self.clip_value
                 if (cond | (abs(W) < 1e-12)).all():
                     break
                 idx = np.where(cond)[0]
