@@ -153,14 +153,14 @@ class BaseModel(BaseEstimator):
 #
 #        if self.softmax and not self.multiplication_layer:
 #            if self.n_main_features != -1 or self.nhl != 0:
-#                raise InputError("multiplication_layer can't be False if softmax is True, \
+#                raise SystemExit("multiplication_layer can't be False if softmax is True, \
 #                        unless nhl is 0 and n_features equals n_main_features")
 #
 #    def _set_hidden_layers(self, nhl, hl1, hl2, hl3):
 #        if is_positive_integer_or_zero(nhl) and nhl <= 3:
 #            self.nhl = nhl
 #        else:
-#            raise InputError("Expected variable 'nhl' to be integer and between 0 and 3. Got %s" % str(nhl))
+#            raise SystemExit("Expected variable 'nhl' to be integer and between 0 and 3. Got %s" % str(nhl))
 #
 #        if is_positive_integer_or_zero(hl1) and \
 #                is_positive_integer_or_zero(hl2) and \
@@ -170,25 +170,25 @@ class BaseModel(BaseEstimator):
 #            self.hl2 = int(hl2)
 #            self.hl3 = int(hl3)
 #        else:
-#            raise InputError("Expected variable 'nhl' to be integer and between 0 and 3. Got %s" % str(nhl))
+#            raise SystemExit("Expected variable 'nhl' to be integer and between 0 and 3. Got %s" % str(nhl))
 #
 #    def _set_softmax(self, softmax):
 #        if softmax in [True, False]:
 #            self.softmax = softmax
 #        else:
-#            raise InputError("Expected variable 'softmax' to be boolean. Got %s" % str(softmax))
+#            raise SystemExit("Expected variable 'softmax' to be boolean. Got %s" % str(softmax))
 #
 #    def _set_fit_bias(self, fit_bias):
 #        if fit_bias in [True, False]:
 #            self.fit_bias = fit_bias
 #        else:
-#            raise InputError("Expected variable 'fit_bias' to be boolean. Got %s" % str(fit_bias))
+#            raise SystemExit("Expected variable 'fit_bias' to be boolean. Got %s" % str(fit_bias))
 #
 #    def _set_multiplication_layer(self, multiplication_layer):
 #        if multiplication_layer in [True, False]:
 #            self.multiplication_layer = multiplication_layer
 #        else:
-#            raise InputError("Expected variable 'multiplication_layer' to be boolean. Got %s" % str(multiplication_layer))
+#            raise SystemExit("Expected variable 'multiplication_layer' to be boolean. Got %s" % str(multiplication_layer))
 #
 #    def _set_activation_function(self, activation_function):
 #        if activation_function in ['sigmoid', tf.nn.sigmoid]:
@@ -210,38 +210,38 @@ class BaseModel(BaseEstimator):
 #        elif activation_function in ['relu_x', tf.nn.relu_x]:
 #            self.activation_function = tf.nn.relu_x
 #        else:
-#            raise InputError("Unknown activation function. Got %s" % str(activation_function))
+#            raise SystemExit("Unknown activation function. Got %s" % str(activation_function))
 #
 #    def _set_bias_input(self, bias_input):
 #        if bias_input in [True, False]:
 #            self.bias_input = bias_input
 #        else:
-#            raise InputError("Expected variable 'bias_input' to be boolean. Got %s" % str(bias_input))
+#            raise SystemExit("Expected variable 'bias_input' to be boolean. Got %s" % str(bias_input))
 #
 #    def _set_n_main_features(self, n_main_features):
 #        if is_positive_integer(n_main_features) or n_main_features == -1:
 #            self.n_main_features = n_main_features
 #        else:
-#            raise InputError("Expected variable 'n_main_features' to be positive integer. Got %s" % str(n_main_features))
+#            raise SystemExit("Expected variable 'n_main_features' to be positive integer. Got %s" % str(n_main_features))
 #
 #    def _set_cost_reg(self, cost_reg):
 #        if not is_positive_or_zero(cost_reg):
-#            raise InputError("Expected positive float value for variable 'cost_reg'. Got %s" % str(cost_reg))
+#            raise SystemExit("Expected positive float value for variable 'cost_reg'. Got %s" % str(cost_reg))
 #        self.cost_reg = cost_reg
 #
 #    def _set_l2_reg(self, l2_reg):
 #        if not is_positive_or_zero(l2_reg):
-#            raise InputError("Expected positive float value for variable 'l2_reg'. Got %s" % str(l2_reg))
+#            raise SystemExit("Expected positive float value for variable 'l2_reg'. Got %s" % str(l2_reg))
 #        self.l2_reg = l2_reg
 #
 #    def _set_learning_rate(self, learning_rate):
 #        if not is_positive(learning_rate):
-#            raise InputError("Expected positive float value for variable learning_rate. Got %s" % str(learning_rate))
+#            raise SystemExit("Expected positive float value for variable learning_rate. Got %s" % str(learning_rate))
 #        self.learning_rate = float(learning_rate)
 #
 #    def _set_iterations(self, iterations):
 #        if not is_positive_integer(iterations):
-#            raise InputError("Expected positive integer value for variable iterations. Got %s" % str(iterations))
+#            raise SystemExit("Expected positive integer value for variable iterations. Got %s" % str(iterations))
 #        self.iterations = int(iterations)
 #
 #    def _set_optimiser(self, optimiser):
@@ -254,11 +254,11 @@ class BaseModel(BaseEstimator):
 #            if optimiser in ["GradientDescent", "Adadelta", "Adagrad", "Adam", "RMSProp"]:
 #                self.optimiser = eval("tf.train.%sOptimizer" % optimiser)
 #        else:
-#            raise InputError("Expected a string or tensorflow.optimiser object for variable 'optimiser'. Got %s" % str(optimiser))
+#            raise SystemExit("Expected a string or tensorflow.optimiser object for variable 'optimiser'. Got %s" % str(optimiser))
 #
 #    def _set_single_thread(self, single_thread):
 #        if not is_bool(single_thread):
-#            raise InputError("Expected boolean for variable single_thread. Got %s" % str(single_thread))
+#            raise SystemExit("Expected boolean for variable single_thread. Got %s" % str(single_thread))
 #        self.single_thread = bool(single_thread)
 #
 #    def _set_tensorboard(self, tensorboard_dir, store_frequency):
@@ -268,10 +268,10 @@ class BaseModel(BaseEstimator):
 #            return
 #
 #        if not is_string(tensorboard_dir):
-#            raise InputError('Expected string value for variable tensorboard_dir. Got %s' % str(tensorboard_dir))
+#            raise SystemExit('Expected string value for variable tensorboard_dir. Got %s' % str(tensorboard_dir))
 #
 #        if not is_positive_integer(store_frequency):
-#            raise InputError("Expected positive integer value for variable store_frequency. Got %s" % str(store_frequency))
+#            raise SystemExit("Expected positive integer value for variable store_frequency. Got %s" % str(store_frequency))
 #
 #        if store_frequency > self.iterations:
 #            print("Only storing final iteration for tensorboard")
@@ -285,7 +285,7 @@ class BaseModel(BaseEstimator):
 #            self.cost = None
 #            return
 #        elif not is_positive_array(cost):
-#            raise InputError("Expected array of positive values for variable cost. Got %s" % str(cost))
+#            raise SystemExit("Expected array of positive values for variable cost. Got %s" % str(cost))
 #
 #        self.cost = np.asarray(cost, dtype = float)
 #
@@ -349,7 +349,7 @@ class BaseModel(BaseEstimator):
 ##        elif is_string(filename):
 ##            plt.save(filename)
 ##        else:
-##            raise InputError("Wrong data type of variable 'filename'. Expected string")
+##            raise SystemExit("Wrong data type of variable 'filename'. Expected string")
 #
 #
 #    def _make_session(self):
@@ -384,7 +384,7 @@ class BaseModel(BaseEstimator):
 #        """
 #
 #        if is_none(self.session):
-#            raise InputError("Model needs to be fit before predictions can be made.")
+#            raise SystemExit("Model needs to be fit before predictions can be made.")
 #
 #        check_array(x, warn_on_dtype = True)
 #
@@ -429,7 +429,7 @@ class BaseModel(BaseEstimator):
 #        if is_none(self.cost):
 #            self.cost = np.ones(self.n_main_features)
 #        elif self.cost.ndim != 1 and self.cost.shape[0] != self.n_features:
-#            raise InputError("Expected variable 'cost' to have shape (%d, ). Got %s" 
+#            raise SystemExit("Expected variable 'cost' to have shape (%d, ). Got %s" 
 #                    % (self.n_features, str(self.cost.shape)))
 #
 #        # Initial set up of the NN
@@ -744,7 +744,7 @@ class SingleMethod(BaseModel):
         if loss in ["mae", "rmsd", "max"]:
             self.loss = loss
         else:
-            raise InputError("Got unknown value %s for parameter 'loss'" % str(loss))
+            raise SystemExit("Got unknown value %s for parameter 'loss'" % str(loss))
 
     def fit(self, x, y):
         """
@@ -788,27 +788,27 @@ class LinearModel(BaseModel):
 
     def _set_positive_constraint(self, x):
         if not is_bool(x):
-            raise InputError("Expected boolean value for parameter 'positive_constraint'. Got %s" % str(x))
+            raise SystemExit("Expected boolean value for parameter 'positive_constraint'. Got %s" % str(x))
         self.positive_constraint = x
 
     def _set_sum_constraint(self, x):
         if not is_bool(x):
-            raise InputError("Expected boolean value for parameter 'sum_constraint'. Got %s" % str(x))
+            raise SystemExit("Expected boolean value for parameter 'sum_constraint'. Got %s" % str(x))
         self.sum_constraint = x
 
     def _set_integer_constraint(self, x):
         if not is_bool(x):
-            raise InputError("Expected boolean value for parameter 'integer_constraint'. Got %s" % str(x))
+            raise SystemExit("Expected boolean value for parameter 'integer_constraint'. Got %s" % str(x))
         self.integer_constraint = x
 
     def _set_l1_reg(self, x):
         if not is_positive_or_zero(x):
-            raise InputError("Expected positive numeric value for parameter 'l1_reg'. Got %s" % str(x))
+            raise SystemExit("Expected positive numeric value for parameter 'l1_reg'. Got %s" % str(x))
         self.l1_reg = x
 
     def _set_clip_value(self, x):
         if not is_positive_or_zero(x):
-            raise InputError("Expected positive numeric value for parameter 'clip_value'. Got %s" % str(x))
+            raise SystemExit("Expected positive numeric value for parameter 'clip_value'. Got %s" % str(x))
         self.clip_value = x
 
     def fit(self, x, y):
