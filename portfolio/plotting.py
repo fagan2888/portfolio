@@ -2,6 +2,11 @@
 Functions for plotting
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import rc
+import seaborn as sns
+
 
 def plot_comparison(X, Y, xlabel = None, ylabel = None, filename = None):
     """
@@ -62,12 +67,12 @@ def plot_comparison(X, Y, xlabel = None, ylabel = None, filename = None):
     ax.set_ylim(lims)
 
     # Set labels
-    if not is_none(xlabel):
+    if xlabel is not None:
         if is_string(xlabel): 
             ax.set_xlabel(xlabel)
         else:
             raise InputError("Wrong data type of variable 'xlabel'. Expected string, got %s" % str(xlabel))
-    if not is_none(ylabel):
+    if ylabel is not None:
         if is_string(ylabel): 
             ax.set_ylabel(ylabel)
         else:
@@ -77,7 +82,7 @@ def plot_comparison(X, Y, xlabel = None, ylabel = None, filename = None):
         raise InputError("Input must be one dimensional")
 
     # Plot or save
-    if is_none(filename):
+    if filename is None:
         plt.show()
     elif is_string(filename):
         if "." not in filename:
