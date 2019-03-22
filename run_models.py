@@ -13,6 +13,7 @@ import pickle
 import matplotlib.pyplot as plt
 import copy
 import re
+import sympy
 
 # Add the module to source path
 dirname = os.path.dirname(os.path.realpath(__file__))
@@ -67,19 +68,18 @@ def check_for_errors(data):
             basis.append(b)
         print(set(func), set(basis))
 
-
 def run_SingleMethod(data):
     model = SingleMethod()
     cv_params = {'loss': ('mae', 'rmsd', 'max')}
     outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=False)
-    run_method(data, model, cv_params, "pickles/single_method_same_reactions_result.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/merged_single_method_same_reactions_result.pkl", outer_splits, inner_splits)
     outer_splits, inner_splits = leave_one_out_cv(data, include_other_reaction_types=True)
-    run_method(data, model, cv_params, "pickles/single_method_all_reactions_result.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/merged_single_method_all_reactions_result.pkl", outer_splits, inner_splits)
     # Less strict splitting
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
-    run_method(data, model, cv_params, "pickles/less_strict_single_method_same_reactions_result.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_single_method_same_reactions_result.pkl", outer_splits, inner_splits)
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
-    run_method(data, model, cv_params, "pickles/less_strict_single_method_all_reactions_result.pkl", outer_splits, inner_splits)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_single_method_all_reactions_result.pkl", outer_splits, inner_splits)
 
 def run_LinearModel(data):
     model = LinearModel(l1_reg = 0,
@@ -90,26 +90,26 @@ def run_LinearModel(data):
     outer_splits_same, inner_splits_same = leave_one_out_cv(data, include_other_reaction_types=False)
     outer_splits_all, inner_splits_all = leave_one_out_cv(data, include_other_reaction_types=True)
     print(1)
-    run_method(data, model, cv_params, "pickles/linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(2)
-    run_method(data, model, cv_params, "pickles/linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=True)
-    print(3)
-    run_method(data, model, cv_params, "pickles/linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
-    print(4)
-    run_method(data, model, cv_params, "pickles/linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    #print(3)
+    #run_method(data, model, cv_params, "pickles/merged_linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    #print(4)
+    #run_method(data, model, cv_params, "pickles/merged_linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=True,
             integer_constraint=False)
     cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
     print(5)
-    run_method(data, model, cv_params, "pickles/linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(6)
-    run_method(data, model, cv_params, "pickles/linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
     # Less strict splitting
     model = LinearModel(l1_reg = 0,
@@ -120,26 +120,26 @@ def run_LinearModel(data):
     outer_splits_same, inner_splits_same = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
     outer_splits_all, inner_splits_all = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
     print(7)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(8)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=True)
-    print(9)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
-    print(10)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    #print(9)
+    #run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    #print(10)
+    #run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = LinearModel(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=True,
             integer_constraint=False)
     cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
     print(11)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(12)
-    run_method(data, model, cv_params, "pickles/less_strict_linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_linear_method_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
 def run_Markowitz(data):
     model = Markowitz(l1_reg = 0,
@@ -150,29 +150,29 @@ def run_Markowitz(data):
     outer_splits_same, inner_splits_same = leave_one_out_cv(data, include_other_reaction_types=False)
     outer_splits_all, inner_splits_all = leave_one_out_cv(data, include_other_reaction_types=True)
     print(1)
-    run_method(data, model, cv_params, "pickles/markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(2)
-    run_method(data, model, cv_params, "pickles/markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = Markowitz(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=True)
-    print(3)
-    run_method(data, model, cv_params, "pickles/markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
-    print(4)
-    run_method(data, model, cv_params, "pickles/markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    #print(3)
+    #run_method(data, model, cv_params, "pickles/merged_markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    #print(4)
+    #run_method(data, model, cv_params, "pickles/merged_markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
     model = Markowitz(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=True,
             integer_constraint=False)
     cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
     print(5)
-    run_method(data, model, cv_params, "pickles/markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(6)
-    run_method(data, model, cv_params, "pickles/markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
     # Less strict splitting
-    model = less_strict_markowitz(l1_reg = 0,
+    model = Markowitz(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=False)
@@ -180,26 +180,26 @@ def run_Markowitz(data):
     outer_splits_same, inner_splits_same = less_strict_leave_one_out_cv(data, include_other_reaction_types=False)
     outer_splits_all, inner_splits_all = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
     print(7)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(8)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
-    model = less_strict_markowitz(l1_reg = 0,
+    run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = Markowitz(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=False,
             integer_constraint=True)
-    print(9)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
-    print(10)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
-    model = less_strict_markowitz(l1_reg = 0,
+    #print(9)
+    #run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_integer_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    #print(10)
+    #run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_integer_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    model = Markowitz(l1_reg = 0,
             clip_value = 1e-6,
             positive_constraint=True,
             integer_constraint=False)
     cv_params = {'clip_value': [0.5] + [10**x for x in range(-6,0)]}
     print(11)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_positive_same_reactions_result.pkl", outer_splits_same, inner_splits_same)
     print(12)
-    run_method(data, model, cv_params, "pickles/less_strict_markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/merged_less_strict_markowitz_positive_all_reactions_result.pkl", outer_splits_all, inner_splits_all)
 
 def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     """
@@ -212,13 +212,13 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
 
     # Create the method subsets
     subsets = [
-               np.where((data['basis'] == 'sto-3g') & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where((data['basis'] != 'qzvp') & (data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where((data['functional'] != 'df-lmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where((data['basis'] == 'sto-3g') & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where((data['basis'] != 'qzvp') & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where((data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
                np.asarray(range(data['basis'].size))
               ]
 
@@ -406,11 +406,15 @@ def parse_reaction_dataframe(df):
     method_name = df_reaction.name.values
     one_electron_energy = df_noref.one_electron_energy.values.reshape(n, -1).astype(float)
     reaction_name = df_name.reaction.values
-    # Merge heavy atom and hydrogen into same classes, meaning
-    # class 5 is merged into 2 and 6 into 4
     reaction_class = df_name.reaction_class.values.astype(int)
-    reaction_class[np.where(reaction_class == 5)[0]] = 2
-    reaction_class[np.where(reaction_class == 6)[0]] = 4
+    ## Merge heavy atom and hydrogen into same classes, meaning
+    ## class 5 is merged into 2 and 6 into 4
+    #reaction_class[np.where(reaction_class == 5)[0]] = 2
+    #reaction_class[np.where(reaction_class == 6)[0]] = 4
+    ## Additionally merge all reactions and all barriers
+    #reaction_class[np.where(reaction_class == 2)[0]] = 1
+    #reaction_class[np.where(reaction_class == 4)[0]] = 3
+
     spin = df_name.spin.values.astype(int)
     two_electron_energy = df_noref.two_electron_energy.values.reshape(n, -1).astype(float)
     unrestricted = df_reaction.unrestricted.values.astype(bool)
@@ -613,7 +617,7 @@ def less_strict_leave_one_out_cv(data, include_other_reaction_types=False,
 
 def leave_one_out_cv(data, include_other_reaction_types=False,
         include_other_spin_states=True, include_other_charge_states=True,
-        include_other_datasets=True):
+        include_other_datasets=True, do_inner_splits=True):
     """
     Attempts to do create leave one out cv splits,
     where none of the molecules in the test reaction
@@ -679,6 +683,9 @@ def leave_one_out_cv(data, include_other_reaction_types=False,
 
     outer_splits = [(np.where(splits[i])[0], i) for i in range(n)]
 
+    if do_inner_splits == False:
+        return outer_splits
+
     inner_splits = []
 
     for i in range(n):
@@ -711,45 +718,134 @@ def get_best_params_and_model(x, y, model, best_cv_params, names):
 
     return best_params, portfolio, portfolio_weight, portfolio_name
 
+def get_hydrogen_transfer_portfolios(data):
+    # Get portfolio for hydrogen transfer enzyme system
+    y = data['reference_energy']
+    x = data['energy']
+
+    for i in range(2): # h-only or not
+        if i == 0:
+            idx_i = np.where((data['reaction_class'] == 5) | (data['reaction_class'] == 6))[0]
+        else:
+            idx_i = np.where((data['reaction_class'] == 5) | (data['reaction_class'] == 6) | (data['reaction_class'] == 2) | (data['reaction_class'] == 4))
+
+        for j in range(2): # svp or avdz upper limit
+            if j == 0:
+               idx_j = np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
+            else:
+               idx_j = np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
+
+            outer_splits = leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
+
+
+            # single method, mae
+            m = SingleMethod(loss='rmsd')
+            errors = []
+            # Keeping track of the indices is a mess, so don't change
+            for i, (train, test) in enumerate(outer_splits):
+                if i not in idx_i:
+                    continue
+                actual_train_idx = list(set(idx_i) & set(train))
+                x_train = x[np.ix_(actual_train_idx, idx_j)]
+                x_test = x[test].reshape(1,-1)
+                y_train = y[actual_train_idx]
+                y_test = y[test]
+                m.fit(x_train, y_train)
+                y_pred = m.predict(x_test)[0]
+                errors.append(y_pred - y_test)
+            print(np.mean(np.abs(errors)))
+            quit()
+
+
+def better_leave_one_out_cv(data):
+    """
+    Do a bunch of fancy stuff to get good cv splits.
+    """
+
+    # Check if there's linear relationships that could be solved analytically
+    free_symbols = {}
+    fixed_symbols = []
+    expressions = []
+    for i in range(102):
+        reaction_name = data['reaction_name'][i]
+        reactants, products = [name.split("+") for name in reaction_name.split("->")]
+        fixed_symbols.append(sympy.symbols('y%d' % i))
+        expr = fixed_symbols[-1]
+        for reactant in reactants:
+            name = data['dataset'][i] + "_" + reactant
+            # Lots of similar or same molecules across the sets
+            if name in ["htbh38_C2H6","abde12_C2H6"]:
+                name = "C2H6"
+            elif name in ["htbh38_CH3", "abde12_CH3", "nhtbh38_CH3"]:
+                name = "CH3"
+            elif name in ["htbh38_H", "abde12_H", "nhtbh38_H"]:
+                name = "H"
+            elif name in ["htbh38_OH", "abde12_OH", "nhtbh38_OH"]:
+                name = "OH"
+            elif name in ["nhtbh38_CH3CH2", "htbh38_C2H5"]:
+                name = "C2H5"
+            elif name in ["htbh38_Cl", "nhtbh38_Cl"]:
+                name = "Cl"
+            elif name in ["htbh38_F", "nhtbh38_F"]:
+                name = "F"
+            elif name in ["htbh38_HCl", "nhtbh38_HCl"]:
+                name = "HCl"
+            elif name in ["htbh38_HF", "nhtbh38_HF"]:
+                name = "HF"
+            if name not in free_symbols:
+                free_symbols[name] = sympy.symbols(name)
+            expr += free_symbols[name]
+        for product in products:
+            name = data['dataset'][i] + "_" + product
+            # Lots of similar or same molecules across the sets
+            if name in ["htbh38_C2H6","abde12_C2H6"]:
+                name = "C2H6"
+            elif name in ["htbh38_CH3", "abde12_CH3", "nhtbh38_CH3"]:
+                name = "CH3"
+            elif name in ["htbh38_H", "abde12_H", "nhtbh38_H"]:
+                name = "H"
+            elif name in ["htbh38_OH", "abde12_OH", "nhtbh38_OH"]:
+                name = "OH"
+            elif name in ["nhtbh38_CH3CH2", "htbh38_C2H5"]:
+                name = "C2H5"
+            elif name in ["htbh38_Cl", "nhtbh38_Cl"]:
+                name = "Cl"
+            elif name in ["htbh38_F", "nhtbh38_F"]:
+                name = "F"
+            elif name in ["htbh38_HCl", "nhtbh38_HCl"]:
+                name = "HCl"
+            elif name in ["htbh38_HF", "nhtbh38_HF"]:
+                name = "HF"
+            if name not in free_symbols:
+                free_symbols[name] = sympy.symbols(name)
+            expr -= free_symbols[name]
+
+        expressions.append(expr)
+
+    sol = sympy.solve(expressions, list(free_symbols.values())[:2])
+    print(sol)
+
+
 
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
+    better_leave_one_out_cv(data)
     ## check for outliers
     #check_for_errors(data)
-    run_SingleMethod(data)
+    #run_SingleMethod(data)
     #run_LinearModel(data)
+    #run_Markowitz(data)
     #quit()
-    #m = LinearModel(clip_value=0, l1_reg=1e-9, positive_constraint=False, integer_constraint=False)
-    #x = data['energy']
+    #m = Markowitz(clip_value=0, l1_reg=1e-7, positive_constraint=False, integer_constraint=False)
+    #x = data['energy'][:,:]
     #y = data['reference_energy']
     #m.fit(x,y)
-    #print(m.portfolio[:3], np.argmax(m.portfolio))
-    #print(m.score(x,y))
-    #z, w = outer_cv(x,y,m,{}, True, 5, 5, 5, 1)[:2]
-    #print(w[(w>1e-3) | (w<-1e-3)])
-    #print(names[w.argmax()])
-    #print(np.mean(abs(z)))
-    #quit()
-    #m = NN(tensorboard_dir = '', learning_rate = 0.1, iterations = 50000,
-    #        l2_reg = 0, cost_reg = 0, cost = cost)
-    #m.fit(x,y)
-    #print(np.sort(m.portfolio)[-5:])
-    #print(names[np.argmax(m.portfolio)])
+    #print(m.portfolio.min(), m.portfolio.max(), m.portfolio[:3])
 
-    ##m = NN(tensorboard_dir = 'log', learning_rate = 0.001, iterations = 1000000, 
-    ##        l2_reg = 1e-6, cost_reg = 1e-9, cost = cost)
-    ##m.fit(x,y)
-    ##quit()
-    ##p = np.where(m.portfolio > 0.01)[0]
-    ##out = df[df.reaction == df.iloc[df.time.idxmax()].reaction].values[p][:,[0,3,-2]]
-    ##print(np.concatenate([out,m.portfolio[p,None]], axis=1))
+    #get_hydrogen_transfer_portfolios(data)
 
-    ##run_SingleMethod(x,y, cost, names, rclass)
-    ##run_linear(x,y, cost, names, None)
 
-    ##def __init__(self, learning_rate = 0.3, iterations = 5000, cost_reg = 0.0, l2_reg = 0.0, 
-    ##        scoring_function = 'rmse', optimiser = "Adam", softmax = True, fit_bias = False,
-    ##        nhl = 0, hl1 = 5, hl2 = 5, hl3 = 5, multiplication_layer = False, activation_function = "sigmoid",
-    ##        bias_input = False, n_main_features = -1, single_thread = True, tensorboard_dir = '', 
-    ##        tensorboard_store_frequency = 100, **kwargs):
+
+
+
