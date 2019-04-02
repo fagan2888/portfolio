@@ -433,13 +433,20 @@ def plot_distribution3(file1, file2, file3, label1=None, label2=None, label3=Non
 
     idx_names = ("Dissociation", "Atom transfer", "Dissociation barrier", "Atom transfer barrier")
 
-    indices = [idx1, idx2, idx3, idx4][idx]
+    indices = np.asarray([idx1, idx2, idx3, idx4][idx])
 
     title = idx_names[idx] + " / " + xlabels[method+1]
 
     x1 = data1['errors'][method,indices]
     x2 = data2['errors'][method,indices]
     x3 = data3['errors'][method,indices]
+
+    w1 = np.where(abs(x1) > 5)[0]
+    w2 = np.where(abs(x2) > 5)[0]
+    w3 = np.where(abs(x3) > 5)[0]
+    print(data1['reaction_names'][indices[w1]])
+    print(data1['reaction_names'][indices[w2]])
+    print(data1['reaction_names'][indices[w3]])
 
     xgrid = np.linspace(min(min(x1),min(x2),min(x3))-3, max(max(x1),max(x2),max(x3))+3, 1000)
 
@@ -464,73 +471,83 @@ def plot_distribution3(file1, file2, file3, label1=None, label2=None, label3=Non
         plt.show()
 
 if __name__ == "__main__":
-    plot_score2("pickles/single_method_all_reactions_result.pkl", "pickles/single_method_same_reactions_result.pkl",
-            label1="single_all", label2="single_same", filename_base='single_all_vs_same')
 
-    plot_score4("pickles/linear_method_all_reactions_result.pkl", "pickles/linear_method_positive_all_reactions_result.pkl",
-            "pickles/linear_method_positive_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
-            label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='linear')
+    #data = load_pickle('pickles/linear_method_same_reactions_result.pkl')
+    #for item in data['cv_params']:
+    #    best = []
+    #    for d in item:
+    #        best.append(d['l1_reg'])
 
-    plot_score4("pickles/markowitz_all_reactions_result.pkl", "pickles/markowitz_positive_all_reactions_result.pkl",
-            "pickles/markowitz_positive_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
-            label1="markowitz_all", label2="markowits_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='markowitz')
+    #    plt.hist(np.log(best), bins=20)
+    #    plt.show()
 
-    plot_score3("pickles/single_method_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
-            "pickles/markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", filename_base='comparison')
+    #plot_score2("pickles/single_method_all_reactions_result.pkl", "pickles/single_method_same_reactions_result.pkl",
+    #        label1="single_all", label2="single_same", filename_base='single_all_vs_same')
+
+    #plot_score4("pickles/linear_method_all_reactions_result.pkl", "pickles/linear_method_positive_all_reactions_result.pkl",
+    #        "pickles/linear_method_positive_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
+    #        label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='linear')
+
+    #plot_score4("pickles/markowitz_all_reactions_result.pkl", "pickles/markowitz_positive_all_reactions_result.pkl",
+    #        "pickles/markowitz_positive_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
+    #        label1="markowitz_all", label2="markowits_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='markowitz')
+
+    #plot_score3("pickles/single_method_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
+    #        "pickles/markowitz_same_reactions_result.pkl",
+    #        label1="single", label2="linear", label3="markowitz", filename_base='comparison')
 
 
-    plot_score2("pickles/less_strict_single_method_all_reactions_result.pkl", "pickles/less_strict_single_method_same_reactions_result.pkl",
-            label1="single_all", label2="single_same", filename_base='less_strict_single_all_vs_same')
+    #plot_score2("pickles/less_strict_single_method_all_reactions_result.pkl", "pickles/less_strict_single_method_same_reactions_result.pkl",
+    #        label1="single_all", label2="single_same", filename_base='less_strict_single_all_vs_same')
 
-    plot_score4("pickles/less_strict_linear_method_all_reactions_result.pkl", "pickles/less_strict_linear_method_positive_all_reactions_result.pkl",
-            "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
-            label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='less_strict_linear')
+    #plot_score4("pickles/less_strict_linear_method_all_reactions_result.pkl", "pickles/less_strict_linear_method_positive_all_reactions_result.pkl",
+    #        "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
+    #        label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='less_strict_linear')
 
-    plot_score4("pickles/less_strict_markowitz_all_reactions_result.pkl", "pickles/less_strict_markowitz_positive_all_reactions_result.pkl",
-            "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", "pickles/less_strict_markowitz_same_reactions_result.pkl",
-            label1="markowitz_all", label2="markowitz_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='less_strict_markowitz')
+    #plot_score4("pickles/less_strict_markowitz_all_reactions_result.pkl", "pickles/less_strict_markowitz_positive_all_reactions_result.pkl",
+    #        "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", "pickles/less_strict_markowitz_same_reactions_result.pkl",
+    #        label1="markowitz_all", label2="markowitz_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='less_strict_markowitz')
 
-    plot_score3("pickles/less_strict_single_method_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
-            "pickles/less_strict_markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", filename_base='less_strict_comparison')
+    #plot_score3("pickles/less_strict_single_method_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
+    #        "pickles/less_strict_markowitz_same_reactions_result.pkl",
+    #        label1="single", label2="linear", label3="markowitz", filename_base='less_strict_comparison')
 
     plot_distribution3("pickles/single_method_same_reactions_result.pkl",
             "pickles/linear_method_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", idx=1, method=3, filename_base='distribution1')
+            label1="single", label2="linear", label3="markowitz", idx=3, method=2, filename_base='distribution1')
 
     plot_distribution3("pickles/single_method_same_reactions_result.pkl",
             "pickles/linear_method_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", idx=0, method=2, filename_base='distribution2')
+            label1="single", label2="linear", label3="markowitz", idx=3, method=3, filename_base='distribution2')
 
-    plot_score2sns("pickles/single_method_all_reactions_result.pkl", "pickles/single_method_same_reactions_result.pkl",
-            label1="single_all", label2="single_same", filename_base='sns_single_all_vs_same')
+    #plot_score2sns("pickles/single_method_all_reactions_result.pkl", "pickles/single_method_same_reactions_result.pkl",
+    #        label1="single_all", label2="single_same", filename_base='sns_single_all_vs_same')
 
-    plot_score4sns("pickles/linear_method_all_reactions_result.pkl", "pickles/linear_method_positive_all_reactions_result.pkl",
-            "pickles/linear_method_positive_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
-            label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='sns_linear')
+    #plot_score4sns("pickles/linear_method_all_reactions_result.pkl", "pickles/linear_method_positive_all_reactions_result.pkl",
+    #        "pickles/linear_method_positive_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
+    #        label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='sns_linear')
 
-    plot_score4sns("pickles/markowitz_all_reactions_result.pkl", "pickles/markowitz_positive_all_reactions_result.pkl",
-            "pickles/markowitz_positive_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
-            label1="markowitz_all", label2="markowits_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='sns_markowitz')
+    #plot_score4sns("pickles/markowitz_all_reactions_result.pkl", "pickles/markowitz_positive_all_reactions_result.pkl",
+    #        "pickles/markowitz_positive_same_reactions_result.pkl", "pickles/markowitz_same_reactions_result.pkl",
+    #        label1="markowitz_all", label2="markowits_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='sns_markowitz')
 
-    plot_score3sns("pickles/single_method_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
-            "pickles/markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", filename_base='sns_comparison')
+    #plot_score3sns("pickles/single_method_same_reactions_result.pkl", "pickles/linear_method_same_reactions_result.pkl",
+    #        "pickles/markowitz_same_reactions_result.pkl",
+    #        label1="single", label2="linear", label3="markowitz", filename_base='sns_comparison')
 
 
-    plot_score2sns("pickles/less_strict_single_method_all_reactions_result.pkl", "pickles/less_strict_single_method_same_reactions_result.pkl",
-            label1="single_all", label2="single_same", filename_base='sns_less_strict_single_all_vs_same')
+    #plot_score2sns("pickles/less_strict_single_method_all_reactions_result.pkl", "pickles/less_strict_single_method_same_reactions_result.pkl",
+    #        label1="single_all", label2="single_same", filename_base='sns_less_strict_single_all_vs_same')
 
-    plot_score4sns("pickles/less_strict_linear_method_all_reactions_result.pkl", "pickles/less_strict_linear_method_positive_all_reactions_result.pkl",
-            "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
-            label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='sns_less_strict_linear')
+    #plot_score4sns("pickles/less_strict_linear_method_all_reactions_result.pkl", "pickles/less_strict_linear_method_positive_all_reactions_result.pkl",
+    #        "pickles/less_strict_linear_method_positive_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
+    #        label1="linear_all", label2="linear_all_pos", label3="linear_same_pos", label4="linear_same", filename_base='sns_less_strict_linear')
 
-    plot_score4sns("pickles/less_strict_markowitz_all_reactions_result.pkl", "pickles/less_strict_markowitz_positive_all_reactions_result.pkl",
-            "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", "pickles/less_strict_markowitz_same_reactions_result.pkl",
-            label1="markowitz_all", label2="markowitz_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='sns_less_strict_markowitz')
+    #plot_score4sns("pickles/less_strict_markowitz_all_reactions_result.pkl", "pickles/less_strict_markowitz_positive_all_reactions_result.pkl",
+    #        "pickles/less_strict_markowitz_positive_same_reactions_result.pkl", "pickles/less_strict_markowitz_same_reactions_result.pkl",
+    #        label1="markowitz_all", label2="markowitz_all_pos", label3="markowitz_same_pos", label4="markowitz_same", filename_base='sns_less_strict_markowitz')
 
-    plot_score3sns("pickles/less_strict_single_method_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
-            "pickles/less_strict_markowitz_same_reactions_result.pkl",
-            label1="single", label2="linear", label3="markowitz", filename_base='sns_less_strict_comparison')
+    #plot_score3sns("pickles/less_strict_single_method_same_reactions_result.pkl", "pickles/less_strict_linear_method_same_reactions_result.pkl",
+    #        "pickles/less_strict_markowitz_same_reactions_result.pkl",
+    #        label1="single", label2="linear", label3="markowitz", filename_base='sns_less_strict_comparison')
 

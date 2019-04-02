@@ -68,96 +68,30 @@ def check_for_errors(data):
             basis.append(b)
         print(set(func), set(basis))
 
-def run_SingleMethod(data, name="single_method"):
+def run_SingleMethod(data, name):
     model = SingleMethod()
     cv_params = {'loss': ('mae', 'rmsd', 'max')}
-    outer_splits, inner_splits = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=True)
-    run_method(data, model, cv_params, "pickles/%s_same_reactions_result.pkl" % name, outer_splits, inner_splits)
-    outer_splits, inner_splits = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=True)
-    run_method(data, model, cv_params, "pickles/%s_all_reactions_result.pkl" % name, outer_splits, inner_splits)
-    # Less strict splitting
-    outer_splits, inner_splits = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=False)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_same_reactions_result.pkl" % name, outer_splits, inner_splits)
-    outer_splits, inner_splits = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=False)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_all_reactions_result.pkl" % name, outer_splits, inner_splits)
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
 
-def run_LinearModel(data, name="linear_method"):
-    model = LinearModel(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=False,
-            integer_constraint=False)
-    cv_params = {'l1_reg': 10**np.linspace(1, 3, 15)}
-    outer_splits_same, inner_splits_same = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=True)
-    outer_splits_all, inner_splits_all = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=True)
-    print(1)
-    run_method(data, model, cv_params, "pickles/%s_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(2)
-    run_method(data, model, cv_params, "pickles/%s_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
-    model = LinearModel(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=True,
-            integer_constraint=False)
-    cv_params = {}
-    print(5)
-    run_method(data, model, cv_params, "pickles/%s_positive_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(6)
-    run_method(data, model, cv_params, "pickles/%s_positive_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/%s_single_result.pkl" % name, outer_splits, inner_splits)
 
-    cv_params = {'l1_reg': 10**np.linspace(1, 3, 15)}
-    outer_splits_same, inner_splits_same = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=False)
-    outer_splits_all, inner_splits_all = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=False)
-    print(7)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(8)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
-    model = LinearModel(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=True,
-            integer_constraint=False)
+def run_LinearModel(data, name):
+    model = LinearModel(positive_constraint=False)
+    cv_params = {'l1_reg': 10**np.linspace(-1, 3, 40)}
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/%s_linear_result.pkl" % name, outer_splits_same, inner_splits_same)
+    model = LinearModel(positive_constraint=True)
     cv_params = {}
-    print(9)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_positive_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(10)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_positive_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/%s_linear_positive_result.pkl" % name, outer_splits_same, inner_splits_same)
 
-def run_Markowitz(data, name="markowitz"):
-    model = Markowitz(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=False,
-            integer_constraint=False)
-    cv_params = {'l1_reg': 10**np.linspace(1, 3, 15)}
-    outer_splits_same, inner_splits_same = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=True)
-    outer_splits_all, inner_splits_all = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=True)
-    print(1)
-    run_method(data, model, cv_params, "pickles/%s_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(2)
-    run_method(data, model, cv_params, "pickles/%s_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
-    model = Markowitz(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=True,
-            integer_constraint=False)
+def run_Markowitz(data, name):
+    model = Markowitz(positive_constraint=False)
+    cv_params = {'l1_reg': 10**np.linspace(-2, 2, 40)}
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/%s_markowitz_result.pkl" % name, outer_splits_same, inner_splits_same)
+    model = Markowitz(positive_constraint=True)
     cv_params = {}
-    print(5)
-    run_method(data, model, cv_params, "pickles/%s_positive_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(6)
-    run_method(data, model, cv_params, "pickles/%s_positive_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
-
-    cv_params = {'l1_reg': 10**np.linspace(1, 3, 15)}
-    outer_splits_same, inner_splits_same = better_leave_one_out_cv(data, include_other_reaction_types=False, strict=False)
-    outer_splits_all, inner_splits_all = better_leave_one_out_cv(data, include_other_reaction_types=True, strict=False)
-    print(7)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(8)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
-    model = Markowitz(l1_reg = 0,
-            clip_value = 1e-4,
-            positive_constraint=True,
-            integer_constraint=False)
-    cv_params = {}
-    print(9)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_positive_same_reactions_result.pkl" % name, outer_splits_same, inner_splits_same)
-    print(10)
-    run_method(data, model, cv_params, "pickles/less_strict_%s_positive_all_reactions_result.pkl" % name, outer_splits_all, inner_splits_all)
+    run_method(data, model, cv_params, "pickles/%s_markowitz_positive_result.pkl" % name, outer_splits_same, inner_splits_same)
 
 
 def run_method(data, model, cv_params, path, outer_splits, inner_splits):
@@ -445,7 +379,7 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
         test_x, test_y = x[test_idx].reshape(1,-1), y[test_idx] # Remove reshape if not using leave one out
         if len(params) > 0:
             cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
-                    return_train_score = False, cv = sklearn.model_selection.PredefinedSplit(inner_cv_splits[i]),
+                    return_train_score = False, cv = inner_cv_splits[i],
                     n_jobs=1)
             cvmod.fit(train_x, train_y)
             cv_portfolios.append(cvmod.best_estimator_.portfolio)
@@ -492,24 +426,22 @@ def get_best_params(params):
 
 def less_strict_leave_one_out_cv(data, include_other_reaction_types=False,
         include_other_spin_states=True, include_other_charge_states=True,
-        include_other_datasets=True):
+        include_other_datasets=True, do_inner_splits=True):
     """
     Attempts to do create leave one out cv splits,
-    where no TS in the test reaction
-    can be present in the reactions of the training set.
+    where no reactions in the test set share the same left or 
+    right hand side with the reactions of the training set.
     """
     def share_names(sub_names1, sub_names2, same_reaction_set):
         """
         Check if the same TS is present in both subsets.
         """
         for name1 in sub_names1:
-            if "TS" not in name1:
-                continue
+            mol1 = set(name1.split("+"))
             for name2 in sub_names2:
-                if "TS" not in name2:
-                    continue
-                if name1 == name2:
-                    if same_reaction_set:
+                if len(mol1 | set(name2.split("+"))) == len(mol1) \
+                    and len(mol1 & set(name2.split("+"))) == len(mol1):
+                    if "TS" in name2 and not same_reaction_set:
                         continue
                     else:
                         return True
@@ -522,14 +454,14 @@ def less_strict_leave_one_out_cv(data, include_other_reaction_types=False,
 
     for i, name1 in enumerate(data['reaction_name']):
         # Get molecule names
-        sub_names1 = re.split('\+|->', name1)
+        sub_names1 = re.split('->', name1)
         rtype1 = data['reaction_class'][i]
         spin1 = data['spin'][i]
         charge1 = data['charge'][i]
         dataset1 = data['dataset'][i]
         for j, name2 in enumerate(data['reaction_name'][i+1:]):
             k = i+j+1
-            sub_names2 = re.split('\+|->', name2)
+            sub_names2 = re.split('->', name2)
             rtype2 = data['reaction_class'][k]
             if not include_other_reaction_types and rtype1 != rtype2:
                 splits[i,k] = False
@@ -556,21 +488,27 @@ def less_strict_leave_one_out_cv(data, include_other_reaction_types=False,
 
     outer_splits = [(np.where(splits[i])[0], i) for i in range(n)]
 
+    if not do_inner_splits:
+        return outer_splits
+
     inner_splits = []
 
     for i in range(n):
-        indices = outer_splits[i][0]
+        original_indices = outer_splits[i][0]
         class1 = data['reaction_class'][i]
-        classes = data['reaction_class'][indices]
-        this_split = np.zeros(classes.size, dtype=int)
-        this_split[np.where(classes != class1)[0]] = -1
-        same_class_indices = np.where(classes == class1)[0]
-        test_splits = [test for train,test in 
-                sklearn.model_selection.KFold(3, shuffle=True).split(same_class_indices)]
-        for j in range(1,3):
-            this_split[same_class_indices[test_splits[j]]] = j
+        classes = data['reaction_class'][original_indices]
+        same_class_original_indices = original_indices[np.where(classes == class1)[0]]
+        splits_i = []
+        for j in same_class_original_indices:
+            j_test_index = np.where(original_indices == j)[0][0]
+            training = []
+            for k in set(original_indices) & set(outer_splits[j][0]):
+                k_test_index = np.where(original_indices == k)[0][0]
+                training.append(k_test_index)
+            splits_i.append((training, [j_test_index]))
+        #inner_splits.append(((train, test) for train,test in splits_i))
+        inner_splits.append(splits_i)
 
-        inner_splits.append(this_split)
 
     return outer_splits, inner_splits
 
@@ -690,21 +628,31 @@ def get_hydrogen_transfer_portfolios(data):
         else:
             idx_i = np.where((data['reaction_class'] == 5) | (data['reaction_class'] == 6) | (data['reaction_class'] == 2) | (data['reaction_class'] == 4))[0]
 
-        for j in range(2): # svp or avdz upper limit
-            if j == 0:
+        for j in range(5):
+            if j == 0: # sv(p)
+               idx_j = np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
+            if j == 1: # svp
                idx_j = np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
-            else:
+            elif j == 2: # avdz
                idx_j = np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
+            elif j == 3: # no sto-3g
+               idx_j = np.where(((data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0]
+            elif j == 4: # lrmp2 sv(p)
+               idx_j = np.where((((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | 
+                   (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) 
+                   & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD')) | 
+                   ((data['functional'] != 'df-lrmp2') & (data['basis'] == 'SV-P')))[0]
+            elif j == 5: # lrmp2 svp
+               idx_j = np.where((((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | 
+                   (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) 
+                   & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD')) | 
+                   ((data['functional'] != 'df-lrmp2') & ((data['basis'] == 'SV-P') | 
+                       (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p'))))[0]
 
             outer_splits = leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
 
-            # single method, mae
-            #m = SingleMethod(loss='mae')
-            #m = sklearn.model_selection.GridSearchCV(
-            #        LinearModel(positive_constraint=False), 
-            #        param_grid={'l1_reg': 10**np.linspace(-9,7,20)}, cv=5)
-            for l1 in list(10**np.linspace(0, 4, 100)):
-                m = LinearModel(positive_constraint=False, l1_reg=l1, integer_constraint=False, clip_value=1e-4)
+            for loss in ['mae', 'rmsd', 'max']:
+                m = SingleMethod(loss=loss)
                 errors = []
                 count = []
                 # Keeping track of the indices is a mess, so don't change
@@ -719,9 +667,79 @@ def get_hydrogen_transfer_portfolios(data):
                     m.fit(x_train, y_train)
                     y_pred = m.predict(x_test)[0]
                     errors.append(y_pred - y_test)
-                    count.append(sum(abs(m.portfolio) > 1e-6))
-                print(l1, np.mean(np.abs(errors)), np.median(count))
+                print(i, j, "single", loss, np.mean(np.abs(errors)))
 
+            for l1 in list(10**np.linspace(0, 4, 50)):
+                m = LinearModel(positive_constraint=False, l1_reg=l1, clip_value=1e-4)
+                errors = []
+                count = []
+                # Keeping track of the indices is a mess, so don't change
+                for k, (train, test) in enumerate(outer_splits):
+                    if k not in idx_i:
+                        continue
+                    actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+                    x_train = x[np.ix_(actual_train_idx, idx_j)]
+                    x_test = x[test,idx_j].reshape(1,-1)
+                    y_train = y[actual_train_idx]
+                    y_test = y[test]
+                    m.fit(x_train, y_train)
+                    y_pred = m.predict(x_test)[0]
+                    errors.append(y_pred - y_test)
+                print(i, j, "linear", l1, np.mean(np.abs(errors)))
+
+            m = LinearModel(positive_constraint=True, l1_reg=0, clip_value=1e-4)
+            errors = []
+            count = []
+            # Keeping track of the indices is a mess, so don't change
+            for k, (train, test) in enumerate(outer_splits):
+                if k not in idx_i:
+                    continue
+                actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+                x_train = x[np.ix_(actual_train_idx, idx_j)]
+                x_test = x[test,idx_j].reshape(1,-1)
+                y_train = y[actual_train_idx]
+                y_test = y[test]
+                m.fit(x_train, y_train)
+                y_pred = m.predict(x_test)[0]
+                errors.append(y_pred - y_test)
+            print(i, j, "linear", "pos", np.mean(np.abs(errors)))
+
+            for l1 in list(10**np.linspace(0, 4, 50)):
+                m = Markowitz(positive_constraint=False, l1_reg=l1, clip_value=1e-4)
+                errors = []
+                count = []
+                # Keeping track of the indices is a mess, so don't change
+                for k, (train, test) in enumerate(outer_splits):
+                    if k not in idx_i:
+                        continue
+                    actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+                    x_train = x[np.ix_(actual_train_idx, idx_j)]
+                    x_test = x[test,idx_j].reshape(1,-1)
+                    y_train = y[actual_train_idx]
+                    y_test = y[test]
+                    m.fit(x_train, y_train)
+                    y_pred = m.predict(x_test)[0]
+                    errors.append(y_pred - y_test)
+                print(i, j, "markowitz", l1, np.mean(np.abs(errors)))
+
+            m = Markowitz(positive_constraint=True, l1_reg=0, clip_value=1e-4)
+            errors = []
+            count = []
+            # Keeping track of the indices is a mess, so don't change
+            for k, (train, test) in enumerate(outer_splits):
+                if k not in idx_i:
+                    continue
+                actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+                x_train = x[np.ix_(actual_train_idx, idx_j)]
+                x_test = x[test,idx_j].reshape(1,-1)
+                y_train = y[actual_train_idx]
+                y_test = y[test]
+                m.fit(x_train, y_train)
+                y_pred = m.predict(x_test)[0]
+                errors.append(y_pred - y_test)
+            print(i, j, "markowitz", "pos", np.mean(np.abs(errors)))
+
+# TODO make inner splits in a more stratified way
 def better_leave_one_out_cv(data, include_other_reaction_types=False,
         include_other_spin_states=True, include_other_charge_states=True,
         include_other_datasets=True, do_inner_splits=True, strict=True):
@@ -766,7 +784,6 @@ def better_leave_one_out_cv(data, include_other_reaction_types=False,
     # Get the automated list of what to leave out
     idx = find_correlations(data, strict)
     for i in range(n):
-        print(idx[i])
         splits[i, idx[i]] = False
 
     outer_splits = [(np.where(splits[i])[0], i) for i in range(n)]
@@ -787,6 +804,13 @@ def better_leave_one_out_cv(data, include_other_reaction_types=False,
                 sklearn.model_selection.KFold(5, shuffle=True).split(same_class_indices)]
         for j in range(1,5):
             this_split[same_class_indices[test_splits[j]]] = j
+
+        #print(test_splits[0])
+        #subset = set(outer_splits[outer_splits[i][0][test_splits[0][0]]][0])
+        #for j in test_splits[0][1:]:
+        #    subset = subset & set(outer_splits[outer_splits[i][0][j]][0])
+        #print(outer_splits[i][0])
+        #print(subset)
 
         inner_splits.append(this_split)
 
@@ -908,10 +932,10 @@ def find_correlations(data, strict=True):
     # Use both a lasso and ridge model with loose cutoffs
     # and take the joint set
     if strict:
-        l1 = 8e-2#1e-2
-        cutoff = 0.15#0.1
+        l1 = 1e-2
+        cutoff = 0.1
     else:
-        l1 = 8e-2
+        l1 = 1.7e-1#8e-2
         cutoff = 0.15
     m1 = Lasso(alpha=l1) # loose 1e-2
     m2 = Ridge(alpha=1e-6)
@@ -931,44 +955,272 @@ def find_correlations(data, strict=True):
     # See if we can predict the reaction energy by knowing the reaction network.
     # This doesn't seem to be meaningful, since our fitted methods are not given
     # the actual reaction network
-    #cum_error = np.zeros(len(reactions))
+    cum_error = np.zeros(len(reactions))
 
-    #m = Lasso(alpha=1e-6)
-    #for j in range(20):
-    #    # Make up some fake energies
-    #    mol_ene = np.random.random(uniq_mols.size)
-    #    y = np.sum(X * mol_ene[None,:], axis=1)
+    m = Lasso(alpha=1e-6)
+    for j in range(20):
+        # Make up some fake energies
+        mol_ene = np.random.random(uniq_mols.size)
+        y = np.sum(X * mol_ene[None,:], axis=1)
 
-    #    for i in range(102):
-    #        indices = list(range(i)) + list(range(i+1,102))
-    #        m.fit(X[indices], y[indices])
-    #        cum_error[i] += abs(m.predict(X[i:i+1])[0] - y[i])
+        for i in range(102):
+            indices = list(range(i)) + list(range(i+1,102))
+            m.fit(X[indices], y[indices])
+            cum_error[i] += abs(m.predict(X[i:i+1])[0] - y[i])
+
+    print(data['reaction_name'][np.where(cum_error < 20*1e-3)[0]])
+    quit()
 
     return [sorted(list(set(output1[i]) | set(output2[i]))) for i in range(102)]
 
+def test_method(data):
+    y = data['reference_energy']
+    x = data['energy']
 
+    #data['reaction_class'][np.where(data['reaction_class'] == 5)[0]] = 2
+    #data['reaction_class'][np.where(data['reaction_class'] == 6)[0]] = 4
+
+    subsets = [
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'SV-P')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where((((data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD')) | ((data['functional'] == 'df-lrmp2') & (data['basis'] == 'svp')))[0],
+              ]
+    #for strict in True,False:
+    #    for include in True,False:
+    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=False, do_inner_splits=False)
+    for i in [6]:#range(1,5):
+        idx_i = np.where(data['reaction_class'] == i)[0]
+        for j, idx_j in enumerate(subsets):
+            if j != 1:
+                continue
+            l1s = 10**np.linspace(-2, 2, 20)
+            #mae = []
+            #for l1 in l1s:
+            #    m = LinearModel(positive_constraint=False, l1_reg=l1, integer_constraint=False, clip_value=1e-4)
+            #    errors = []
+            #    # Keeping track of the indices is a mess, so don't change
+            #    for k, (train, test) in enumerate(outer_splits):
+            #        if k not in idx_i:
+            #            continue
+            #        actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+            #        x_train = x[np.ix_(actual_train_idx, idx_j)]
+            #        x_test = x[test,idx_j].reshape(1,-1)
+            #        y_train = y[actual_train_idx]
+            #        y_test = y[test]
+            #        m.fit(x_train, y_train)
+            #        y_pred = m.predict(x_test)[0]
+            #        errors.append(y_pred - y_test)
+            #    mae.append(np.mean(np.abs(errors)))
+            #    #print(include, strict, "linear", np.log10(l1), np.mean(np.abs(errors)))
+            #idx = np.argmin(mae)
+            #print(strict, include, i, j, "linear", np.log10(l1s[idx]), mae[idx-2:idx+3])
+
+            #for ub in (0.5, 0.25, 0.1, 0.05):
+            #    mae = []
+            #    for l1 in l1s:
+            #        m = Markowitz(positive_constraint=False, l1_reg=l1, integer_constraint=False, clip_value=1e-4,
+            #                method='mean_upper_bound_min_variance', upper_bound=ub)
+            #        errors = []
+            #        # Keeping track of the indices is a mess, so don't change
+            #        for k, (train, test) in enumerate(outer_splits):
+            #            if k not in idx_i:
+            #                continue
+            #            actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+            #            x_train = x[np.ix_(actual_train_idx, idx_j)]
+            #            x_test = x[test,idx_j].reshape(1,-1)
+            #            y_train = y[actual_train_idx]
+            #            y_test = y[test]
+            #            m.fit(x_train, y_train)
+            #            y_pred = m.predict(x_test)[0]
+            #            errors.append(y_pred - y_test)
+            #        mae.append(np.mean(np.abs(errors)))
+            #        #print(include, strict, "markowitz", np.log10(l1), np.mean(np.abs(errors)))
+            #    idx = np.argmin(mae)
+            #    print(strict, include, i, j, "markowitz2", ub, np.log10(l1s[idx]), mae[idx])
+            m = Markowitz(positive_constraint=False, l1_reg=10**-0.5, integer_constraint=False, clip_value=0)
+            errors = []
+            # Keeping track of the indices is a mess, so don't change
+            for k, (train, test) in enumerate(outer_splits):
+                if k not in idx_i:
+                    continue
+                actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+                x_train = x[np.ix_(actual_train_idx, idx_j)]
+                x_test = x[test,idx_j].reshape(1,-1)
+                y_train = y[actual_train_idx]
+                y_test = y[test]
+                m.fit(x_train, y_train)
+                y_pred = m.predict(x_test)[0]
+                errors.append(y_pred - y_test)
+            print(np.mean(np.abs(errors)))
+            #print(include, strict, "markowitz", np.log10(l1), np.mean(np.abs(errors)))
+
+            #mae = []
+            #for l1 in l1s:
+            #    m = Markowitz(positive_constraint=False, l1_reg=l1, integer_constraint=False, clip_value=0)
+            #    errors = []
+            #    # Keeping track of the indices is a mess, so don't change
+            #    for k, (train, test) in enumerate(outer_splits):
+            #        if k not in idx_i:
+            #            continue
+            #        actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+            #        x_train = x[np.ix_(actual_train_idx, idx_j)]
+            #        x_test = x[test,idx_j].reshape(1,-1)
+            #        y_train = y[actual_train_idx]
+            #        y_test = y[test]
+            #        m.fit(x_train, y_train)
+            #        y_pred = m.predict(x_test)[0]
+            #        errors.append(y_pred - y_test)
+            #    mae.append(np.mean(np.abs(errors)))
+            #    #print(include, strict, "markowitz", np.log10(l1), np.mean(np.abs(errors)))
+            #idx = np.argmin(mae)
+            #print(i, j, "markowitz", np.log10(l1s[idx]), mae[idx-2:idx+3])
+
+            #mae = []
+            #losses = ('max', 'mae', 'rmsd')
+            #for loss in losses:
+            #    m = SingleMethod(loss=loss)
+            #    errors = []
+            #    count = []
+            #    # Keeping track of the indices is a mess, so don't change
+            #    for k, (train, test) in enumerate(outer_splits):
+            #        if k not in idx_i:
+            #            continue
+            #        actual_train_idx = np.asarray(list(set(idx_i) & set(train)))
+            #        x_train = x[np.ix_(actual_train_idx, idx_j)]
+            #        x_test = x[test,idx_j].reshape(1,-1)
+            #        y_train = y[actual_train_idx]
+            #        y_test = y[test]
+            #        m.fit(x_train, y_train)
+            #        y_pred = m.predict(x_test)[0]
+            #        errors.append(y_pred - y_test)
+            #    mae.append(np.mean(np.abs(errors)))
+            #    #print(include, strict, "single", loss, np.mean(np.abs(errors)))
+            #print(strict, include, i, j, "single", losses[np.argmin(mae)], min(mae))
+
+
+def reaction_correlation(data):
+    import seaborn as sns
+    import scipy.stats as ss
+    sortidx = np.argsort(data['reaction_class'])
+    data['reaction_class'] = data['reaction_class'][sortidx]
+    data['energy'] = data['energy'][sortidx]
+    data['reference_energy'] = data['reference_energy'][sortidx]
+    data['reaction_name'] = data['reaction_name'][sortidx]
+    dy = data['energy'] - data['reference_energy'][:,None]
+    dy = dy[:,np.where((dy < 15).all(0))[0]]
+    #idx = np.where((data['reaction_class'] == 1) | (data['reaction_class'] == 2) | (data['reaction_class'] == 5))[0]
+    #idx = np.where((data['reaction_class'] == 4) | (data['reaction_class'] == 6))[0]
+    idx = np.where((data['reaction_class'] < 10))[0]
+    #for i in range(1,7):
+    #    x = np.where(data['reaction_class'] == i)[0]
+    #    print(i, x.min(), x.max())
+    #dy = dy[:,np.where((dy < 10).all(0))[0]]
+    dy = dy[idx]
+    dy = flip_reactions(dy)
+
+    #cov = np.zeros((dy.shape[0],dy.shape[0]))
+    #for i in range(dy.shape[0]):
+    #    for j in range(i+1, dy.shape[0]):
+    #        t,p = ss.wilcoxon(dy[i], dy[j])
+    #        logp = np.log(p)
+    #        cov[i,j] = logp
+    #        cov[j,i] = logp
+
+    cov = np.corrcoef(dy, ddof=1)
+
+    # Plot heatmap
+    sns.heatmap((cov), square=True, linewidths=.25, cbar_kws={"shrink": .5},
+            cmap = sns.diverging_palette(220, 10, as_cmap=True),
+            xticklabels=data['reaction_name'][idx], yticklabels=data['reaction_name'][idx],
+            center=0, vmax=1)
+    plt.xticks(rotation=-90)
+    plt.yticks(rotation=0)
+    # Plot grid
+    n = len(idx)
+    for i in sorted(np.unique(data['reaction_class'][idx]))[1:]:
+        m = np.where(data['reaction_class'][idx] == i)[0][0]
+        plt.plot([0,n], [m,m], "-", c='k')
+        plt.plot([m,m], [0,n], "-", c='k')
+    plt.show()
+    #sns.heatmap(abs(cov), square=True, linewidths=.25, cbar_kws={"shrink": .5},
+    #        cmap = sns.diverging_palette(220, 10, as_cmap=True),
+    #        xticklabels=data['reaction_name'][idx], yticklabels=data['reaction_name'][idx],
+    #        center=0, vmax=1)
+    #plt.xticks(rotation=-90)
+    #plt.yticks(rotation=0)
+    ## Plot grid
+    #n = len(idx)
+    #for i in range(1,6):
+    #    m = np.where(data['reaction_class'] == i+1)[0][0]
+    #    plt.plot([0,n], [m,m], "-", c='k')
+    #    plt.plot([m,m], [0,n], "-", c='k')
+    #plt.show()
 
 
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
-    # Merge heavy atom and hydrogen into same classes, meaning
-    # class 5 is merged into 2 and 6 into 4
-    data['reaction_class'][np.where(data['reaction_class'] == 5)[0]] = 2
-    data['reaction_class'][np.where(data['reaction_class'] == 6)[0]] = 4
+    ## Merge heavy atom and hydrogen into same classes, meaning
+    ## class 5 is merged into 2 and 6 into 4
+    #data['reaction_class'][np.where(data['reaction_class'] == 5)[0]] = 2
+    #data['reaction_class'][np.where(data['reaction_class'] == 6)[0]] = 4
 
-    ## check for outliers
-    #check_for_errors(data)
-    run_SingleMethod(data)
-    run_LinearModel(data)
-    run_Markowitz(data)
+    ### check for outliers
+    ##check_for_errors(data)
+    #run_SingleMethod(data)
+    #run_LinearModel(data)
+    #run_Markowitz(data)
 
-    ## Additionally merge all reactions and all barriers
-    data['reaction_class'][np.where(data['reaction_class'] == 2)[0]] = 1
-    data['reaction_class'][np.where(data['reaction_class'] == 4)[0]] = 3
+    ### Additionally merge all reactions and all barriers
+    #data['reaction_class'][np.where(data['reaction_class'] == 2)[0]] = 1
+    #data['reaction_class'][np.where(data['reaction_class'] == 4)[0]] = 3
 
-    run_SingleMethod(data, "merged_single_method")
-    run_LinearModel(data, "merged_linear_method")
-    run_Markowitz(data, "merged_markowitz")
+    #run_SingleMethod(data, "merged_single_method")
+    #run_LinearModel(data, "merged_linear_method")
+    #run_Markowitz(data, "merged_markowitz")
 
     #get_hydrogen_transfer_portfolios(data)
+    #test_method(data)
+    #reaction_correlation(data)
+    #ocv, icv = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=True)
+    #for i in range(len(ocv)):
+    #    all_ = list(range(len(ocv)))
+    #    all_.pop(i)
+    #    print(data['reaction_name'][ocv[i][0][np.where(icv[i] == 0)[0]]])
+    #    quit()
+
+    #    diff = np.setdiff1d(all_, cv[i][0])
+    #    print(data['reaction_name'][i], data['reaction_name'][diff])
+
+    # Loop through the subsets we want to study
+    for i in range(7):
+        if i == 0:
+            idx = np.where(data['reaction_class'] == 1)[0]
+        elif i == 1:
+            idx = np.where(data['reaction_class'] == 4)[0]
+        elif i == 2:
+            idx = np.where(data['reaction_class'] == 5)[0]
+        elif i == 3:
+            idx = np.where(data['reaction_class'] == 6)[0]
+        elif i == 4:
+            idx = np.where((data['reaction_class'] == 2) & (data['reaction_class'] == 5))[0]
+        elif i == 5:
+            idx = np.where((data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
+        elif i == 6:
+            idx = np.where((data['reaction_class'] == 3) & (data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
+
+        name = str(i + 1)
+
+        subdata = {}
+        for key in data.keys():
+            if data[key].shape[0] == data['reaction_class'].shape[0]:
+                subdata[key] = data[key][idx]
+            else:
+                subdata[key] = data[key]
+
+        run_SingleMethod(data, name)
+        run_LinearModel(data, name)
+        run_Markowitz(data, name)
+
