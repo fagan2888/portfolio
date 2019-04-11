@@ -106,7 +106,7 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
 
     # create an empty file to parallelize tasks a bit easier
     with open(path, 'wb') as f:
-        f.write("")
+        pass
 
     # Create the method subsets
     subsets = [
@@ -181,10 +181,19 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     #        continue
     #    print(data['dataset'][reaction], data['reaction_name'][reaction], data['method_name'][method], dy[reaction,method])
 
-    for subset in subsets:
+    for i, subset in enumerate(subsets):
+        print("subset", i)
+        x_subset = x[:,subset].copy()
+        y_subset = y.copy()
+        # flip reactions if needed
+        dy = x_subset - y_subset[:,None]
+        dy_flipped = flip_order(dy)
+        flip_idx = np.where(dy / dy_flipped < 0)[0]
+        x_subset[flip_idx] *= -1
+        y_subset[flip_idx] *= -1
         # Get best hyperparams from cv
         error, cv_portfolio, best_cv_params = \
-                outer_cv(x[:,subset], y, model, cv_params, outer_splits, inner_splits)
+                outer_cv(x_subset, y_subset, model, cv_params, outer_splits, inner_splits)
 
         # Convert the portfolios to the full set
         portfolio = np.zeros(x.shape, dtype=float)
@@ -426,12 +435,6 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
     for i, (train_idx, test_idx) in enumerate(outer_cv_splits):
         train_x, train_y = x[train_idx], y[train_idx]
         test_x, test_y = x[test_idx].reshape(1,-1), y[test_idx] # Remove reshape if not using leave one out
-        # flip reactions if needed
-        dy = test_x - test_y[:,None]
-        dy_flipped = flip_order(dy)
-        flip_idx = np.where(dy / dy_flipped < 0)[0]
-        test_x[flip_idx] *= -1
-        test_y[flip_idx] *= -1
         if len(params) > 0:
             cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
                     return_train_score = False, cv = inner_cv_splits[i],
@@ -1283,7 +1286,7 @@ if __name__ == "__main__":
 
     #get_hydrogen_transfer_portfolios(data)
     #test_method(data)
-    reaction_correlation(data)
+    #reaction_correlation(data)
     #ocv, icv = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=True)
     #for i in range(len(ocv)):
     #    all_ = list(range(len(ocv)))
@@ -1294,9 +1297,9 @@ if __name__ == "__main__":
     #    diff = np.setdiff1d(all_, cv[i][0])
     #    print(data['reaction_name'][i], data['reaction_name'][diff])
 
-    quit()
     # Loop through the subsets we want to study
     for i in range(7):
+        print("class", i)
         if i == 0:
             idx = np.where(data['reaction_class'] == 1)[0]
         elif i == 1:
@@ -1321,7 +1324,10 @@ if __name__ == "__main__":
             else:
                 subdata[key] = data[key]
 
+        print("single")
         run_SingleMethod(data, name)
+        print("linear")
         run_LinearModel(data, name)
+        print("markowitz")
         run_Markowitz(data, name)
 
