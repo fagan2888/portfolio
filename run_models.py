@@ -80,19 +80,19 @@ def run_LinearModel(data, name):
     model = LinearModel(positive_constraint=False)
     cv_params = {'l1_reg': 10**np.linspace(-1, 3, 40)}
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
-    run_method(data, model, cv_params, "pickles/%s_linear_result.pkl" % name, outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/%s_linear_result.pkl" % name, outer_splits, inner_splits)
     model = LinearModel(positive_constraint=True)
     cv_params = {}
-    run_method(data, model, cv_params, "pickles/%s_linear_positive_result.pkl" % name, outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/%s_linear_positive_result.pkl" % name, outer_splits, inner_splits)
 
 def run_Markowitz(data, name):
     model = Markowitz(positive_constraint=False)
     cv_params = {'l1_reg': 10**np.linspace(-2, 2, 40)}
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
-    run_method(data, model, cv_params, "pickles/%s_markowitz_result.pkl" % name, outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/%s_markowitz_result.pkl" % name, outer_splits, inner_splits)
     model = Markowitz(positive_constraint=True)
     cv_params = {}
-    run_method(data, model, cv_params, "pickles/%s_markowitz_positive_result.pkl" % name, outer_splits_same, inner_splits_same)
+    run_method(data, model, cv_params, "pickles/%s_markowitz_positive_result.pkl" % name, outer_splits, inner_splits)
 
 
 def run_method(data, model, cv_params, path, outer_splits, inner_splits):
