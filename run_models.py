@@ -20,7 +20,8 @@ dirname = os.path.dirname(os.path.realpath(__file__))
 source_path = dirname + "/portfolio"
 sys.path.append(source_path)
 
-from portfolio.model import SingleMethod, LinearModel, Markowitz#, NN
+from portfolio.model import SingleMethod, LinearModel, Markowitz
+import scipy.stats as ss
 
 #def calc_mean_and_var(x):
 #    vars_ = np.var(x, ddof = 1, axis = 1)
@@ -103,17 +104,63 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
         print("%s already generated" % path)
         return
 
+    # create an empty file to parallelize tasks a bit easier
+    with open(path, 'wb') as f:
+        f.write("")
+
     # Create the method subsets
     subsets = [
-               np.where((data['basis'] == 'sto-3g') & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where((data['basis'] != 'qzvp') & (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   (data['basis'] == 'sto-3g') & 
+                   (data['functional'] != 'df-lrmp2') & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where((data['basis'] != 'qzvp') & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
                np.where((data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.asarray(range(data['basis'].size))
+               np.asarray(range(data['basis'].size)),
+               np.where(
+                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where((data['basis'] != 'qzvp') & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where(data['functional'] != 'DCSD')[0],
+               np.where(
+                   ((data['basis'] == 'sto-3g') | ((data['basis'] == 'SV-P') & (data['unrestricted'] == False))) & 
+                   (data['functional'] != 'df-lrmp2') & 
+                   (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) | (((data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['unrestricted'] == False))) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) | ((data['basis'] == 'avdz') & (data['unrestricted'] == False))) & 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) | ((data['basis'] == 'tzvp') & (data['unrestricted'] == False))) &
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) | ((data['basis'] == 'avtz') & (data['unrestricted'] == False)))& 
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
+               np.where(
+                   ((data['basis'] != 'qzvp') | ((data['basis'] == 'qzvp') & (data['unrestricted'] == False))) &
+                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
               ]
+
+    subset_names = ["sto-3g", "sv-p", "svp/6-31+G(d,p)", "avdz", "tzvp", "avtz", "qzvp", "WF", "svp+mp2", "avdz+mp2", "tzvp+mp2", "avtz+mp2", "qzvp+mp2", 
+            "sto-3g (SV-P)", "SV-P (svp/6-31+G(d,p)", "svp/6-31+G(d,p) (avdz)", "avdz (tzvp)", "tzvp (avtz)", "avtz (qzvp)"]
 
     x = data['energy']
     y = data['reference_energy']
@@ -155,6 +202,8 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     d['reaction_names'] = data['reaction_name']
     d['method_names'] = data['method_name']
     d['dataset'] = data['dataset']
+    d['reaction_class'] = data['reaction_class']
+    d['subset_names'] = subset_names
 
     # Dump the results in a pickle
     with open(path, 'wb') as f:
@@ -377,6 +426,12 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
     for i, (train_idx, test_idx) in enumerate(outer_cv_splits):
         train_x, train_y = x[train_idx], y[train_idx]
         test_x, test_y = x[test_idx].reshape(1,-1), y[test_idx] # Remove reshape if not using leave one out
+        # flip reactions if needed
+        dy = test_x - test_y[:,None]
+        dy_flipped = flip_order(dy)
+        flip_idx = np.where(dy / dy_flipped < 0)[0]
+        test_x[flip_idx] *= -1
+        test_y[flip_idx] *= -1
         if len(params) > 0:
             cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
                     return_train_score = False, cv = inner_cv_splits[i],
@@ -1111,14 +1166,14 @@ def reaction_correlation(data):
     dy = data['energy'] - data['reference_energy'][:,None]
     dy = dy[:,np.where((dy < 15).all(0))[0]]
     #idx = np.where((data['reaction_class'] == 1) | (data['reaction_class'] == 2) | (data['reaction_class'] == 5))[0]
-    #idx = np.where((data['reaction_class'] == 4) | (data['reaction_class'] == 6))[0]
-    idx = np.where((data['reaction_class'] < 10))[0]
+    idx = np.where((data['reaction_class'] == 2) | (data['reaction_class'] == 5))[0]
+    #idx = np.where((data['reaction_class'] == 2))[0]
     #for i in range(1,7):
     #    x = np.where(data['reaction_class'] == i)[0]
     #    print(i, x.min(), x.max())
     #dy = dy[:,np.where((dy < 10).all(0))[0]]
     dy = dy[idx]
-    dy = flip_reactions(dy)
+    dy = flip_order(dy)
 
     #cov = np.zeros((dy.shape[0],dy.shape[0]))
     #for i in range(dy.shape[0]):
@@ -1134,7 +1189,7 @@ def reaction_correlation(data):
     sns.heatmap((cov), square=True, linewidths=.25, cbar_kws={"shrink": .5},
             cmap = sns.diverging_palette(220, 10, as_cmap=True),
             xticklabels=data['reaction_name'][idx], yticklabels=data['reaction_name'][idx],
-            center=0, vmax=1)
+            center=0, vmax=1, vmin=-1)
     plt.xticks(rotation=-90)
     plt.yticks(rotation=0)
     # Plot grid
@@ -1158,6 +1213,51 @@ def reaction_correlation(data):
     #    plt.plot([m,m], [0,n], "-", c='k')
     #plt.show()
 
+def flip_order(x):
+    """
+    For e.g. reaction energies, the order of the reaction is arbitrary.
+    This tries to flip the order of the reactions one by one and selects
+    the order that maximises the likelihood.
+    """
+    def get_nll(x):
+        """
+        Returns the negative log-likelihood
+        """
+
+        # Get means of all methods
+        means = x.mean(0)
+        # Get the covariance
+        cov = np.cov(x, ddof=1, rowvar=False)
+        # Add some regularization to make the covariance non-singular
+        cov += np.identity(cov.shape[0]) * 5e-4
+        # Creates the multivariate normal
+        rv = ss.multivariate_normal(means, cov)
+        # Gets the negative log likelihood
+        nll = -sum(rv.logpdf(x))
+        return nll
+
+    last_nll = get_nll(x)
+
+
+    # Run through the data a maximum of 10 times.
+    for j in range(10):
+        # Keep track of whether a flip has occured in this iteration
+        has_flipped = False
+        # Loop through all data points
+        for i in range(x.shape[0]):
+            # Do the flip
+            xflipi = x.copy()
+            xflipi[i] *= -1
+            # Recalculate the nll
+            nll = get_nll(xflipi)
+            if nll < last_nll:
+                x[i] *= -1
+                last_nll = nll
+                has_flipped = True
+        # Break if no flip
+        if has_flipped == False:
+            break
+    return x
 
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
@@ -1183,7 +1283,7 @@ if __name__ == "__main__":
 
     #get_hydrogen_transfer_portfolios(data)
     #test_method(data)
-    #reaction_correlation(data)
+    reaction_correlation(data)
     #ocv, icv = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=True)
     #for i in range(len(ocv)):
     #    all_ = list(range(len(ocv)))
@@ -1194,6 +1294,7 @@ if __name__ == "__main__":
     #    diff = np.setdiff1d(all_, cv[i][0])
     #    print(data['reaction_name'][i], data['reaction_name'][diff])
 
+    quit()
     # Loop through the subsets we want to study
     for i in range(7):
         if i == 0:

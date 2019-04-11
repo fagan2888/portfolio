@@ -16,50 +16,6 @@ from .tf_utils import TensorBoardLogger
 import cvxpy
 import scipy.stats as ss
 
-def flip_order(x):
-    """
-    For e.g. reaction energies, the order of the reaction is arbitrary.
-    This tries to flip the order of the reactions one by one and selects
-    the order that maximises the likelihood.
-    """
-    def get_nll(x):
-        """
-        Returns the negative log-likelihood
-        """
-
-        # Get means of all methods
-        means = x.mean(0)
-        # Get the covariance
-        cov = np.cov(x, ddof=1, rowvar=False)
-        # Add some regularization to make the covariance non-singular
-        cov += np.identity(cov.shape[0]) * 5e-4
-        # Creates the multivariate normal
-        rv = ss.multivariate_normal(means, cov)
-        # Gets the negative log likelihood
-        nll = -sum(rv.logpdf(x))
-
-    last_nll = get_nll(x)
-
-
-    # Run through the data a maximum of 10 times.
-    for j in range(10):
-        # Keep track of whether a flip has occured in this iteration
-        has_flipped = False
-        # Loop through all data points
-        for i in range(x.shape[0]):
-            # Do the flip
-            xflipi = x.copy()
-            xflipi[i] *= -1
-            # Recalculate the nll
-            nll = get_nll(xflipi)
-            if nll < last_nll:
-                x[i] *= -1
-                last_nll = nll
-                has_flipped = True
-        # Break if no flip
-        if has_flipped == False:
-            break
-    return x
 
 class BaseModel(BaseEstimator):
     """
@@ -953,13 +909,12 @@ class Markowitz(LinearModel):
     """
 
     def __init__(self, method='min_expected_squared_loss', upper_bound=0.5, l1_reg=0, clip_value=0, 
-            sum_constraint=True, integer_constraint=False, positive_constraint=True, flip=False):
-        super(Markowitz, self).__init__(l1_reg=l1_reg, clip_value=clip_value, 
+            sum_constraint=True, integer_constraint=False, positive_constraint=True):
+        super(Markowitz, self).__init__(l1_reg=l1_reg, clip_value=clip_value,
                 sum_constraint=sum_constraint, integer_constraint=integer_constraint,
                 positive_constraint=positive_constraint)
         self._set_method(method)
         self._set_upper_bound(upper_bound)
-        self.flip = flip
 
         if self.sum_constraint == False:
             raise SystemExit("The Markowitz method requires `sum_constraint == True`")
@@ -987,9 +942,6 @@ class Markowitz(LinearModel):
 
         # Get the error for all methods
         x = X - y[:, None]
-
-        if self.flip:
-            x = flip_order(x)
 
         # Get means
         means = x.mean(0)
