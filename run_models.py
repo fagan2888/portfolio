@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import copy
 import re
 from sklearn.linear_model import Lasso, Ridge
+import time
 
 # Add the module to source path
 dirname = os.path.dirname(os.path.realpath(__file__))
@@ -108,59 +109,81 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     with open(path, 'wb') as f:
         pass
 
-    # Create the method subsets
-    subsets = [
-               np.where(
-                   (data['basis'] == 'sto-3g') & 
-                   (data['functional'] != 'df-lrmp2') & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where((data['basis'] != 'qzvp') & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where((data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.asarray(range(data['basis'].size)),
-               np.where(
-                   ((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where(((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where((data['basis'] != 'qzvp') & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where(data['functional'] != 'DCSD')[0],
-               np.where(
-                   ((data['basis'] == 'sto-3g') | ((data['basis'] == 'SV-P') & (data['unrestricted'] == False))) & 
-                   (data['functional'] != 'df-lrmp2') & 
-                   (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P')) | (((data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) & (data['unrestricted'] == False))) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p')) | ((data['basis'] == 'avdz') & (data['unrestricted'] == False))) & 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz')) | ((data['basis'] == 'tzvp') & (data['unrestricted'] == False))) &
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   (((data['basis'] == 'sto-3g') | (data['basis'] == 'SV-P') | (data['basis'] == 'svp') | (data['basis'] == '6-31+G-d,p') | (data['basis'] == 'avdz') | (data['basis'] == 'tzvp')) | ((data['basis'] == 'avtz') & (data['unrestricted'] == False)))& 
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-               np.where(
-                   ((data['basis'] != 'qzvp') | ((data['basis'] == 'qzvp') & (data['unrestricted'] == False))) &
-                   (data['functional'] != 'df-lrmp2') & (data['functional'] != 'DCSD'))[0],
-              ]
+    # Use only gga
+    ggas = ['B88X', 'B', 'BECKE', 'B-LYP', 'B-P', 'B-VWN', 'CS', 'D', 'HFB', 'HFS',
+            'LDA', 'LSDAC', 'LSDC', 'LYP88', 'PBE', 'PBEREV', 'PW91', 'S', 'SLATER', 'SOGGA11',
+            'SOGGA', 'S-VWN', 'VS99', 'VWN80', 'VWN', 'M06-L','M11-L','MM06-L']
 
-    subset_names = ["sto-3g", "sv-p", "svp/6-31+G(d,p)", "avdz", "tzvp", "avtz", "qzvp", "WF", "svp+mp2", "avdz+mp2", "tzvp+mp2", "avtz+mp2", "qzvp+mp2", 
-            "sto-3g (SV-P)", "SV-P (svp/6-31+G(d,p)", "svp/6-31+G(d,p) (avdz)", "avdz (tzvp)", "tzvp (avtz)", "avtz (qzvp)"]
+    gga_mask = np.isin(data['functional'], ggas)
+    basis_mask0 = (data['basis'] == 'sto-3g')
+    basis_mask1 = (data['basis'] == 'SV-P') | basis_mask0
+    basis_mask2 = np.isin(data['basis'], ['svp','6-31+G-d,p']) | basis_mask1
+    basis_mask3 = (data['basis'] == 'avdz') | basis_mask2
+    basis_mask4 = (data['basis'] == 'tzvp') | basis_mask3
+    basis_mask5 = (data['basis'] == 'avtz') | basis_mask4
+    basis_mask6 = (data['basis'] == 'qzvp') | basis_mask5
+    mp2_mask = (data['functional'] == 'df-lrmp2')
+    wf_mask = mp2_mask | (data['functional'] == 'DCSD')
+    unrestricted_mask = (data['unrestricted'] == True)
+
+    subsets = [
+            np.where(gga_mask & basis_mask1 & ~wf_mask)[0],
+            np.where(gga_mask & basis_mask2 & ~wf_mask)[0],
+            np.where(gga_mask & basis_mask3 & ~wf_mask)[0],
+            np.where(gga_mask & basis_mask4 & ~wf_mask)[0],
+            np.where(gga_mask & basis_mask5 & ~wf_mask)[0],
+            np.where(gga_mask & basis_mask6 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask1 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask2 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask3 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask4 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask5 & ~wf_mask)[0],
+            np.where(~gga_mask & basis_mask6 & ~wf_mask)[0]]
+
+    for i, mask_i in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+        for j, mask_j in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+            if j > i:
+                continue
+            subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (~gga_mask & mask_j & ~wf_mask))[0])
+
+    for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+        for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+            if j > i:
+                continue
+            subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
+    for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+        for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+            if j > i:
+                continue
+            subsets.append(np.where((~gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
+
+
+
+    subset_names = []
+    for i in range(6):
+        subset_names.append("gga%d" % (i+1))
+    for i in range(6):
+        subset_names.append("hybrid%d" % (i+1))
+
+    for i, I in enumerate([1,2,3,4,5,6]):
+        for j, J in enumerate([1,2,3,4,5,6]):
+            if j > i:
+                continue
+            subset_names.append("gga%d+hybrid%d" % (I,J))
+
+    for i, I in enumerate([2,3,4,5,6]):
+        for j, J in enumerate([2,3,4,5,6]):
+            if j > i:
+                continue
+            subset_names.append("gga%d+mp2%d" % (I,J))
+    for i, I in enumerate([2,3,4,5,6]):
+        for j, J in enumerate([2,3,4,5,6]):
+            if j > i:
+                continue
+            subset_names.append("hybrid%d+mp2%d" % (I,J))
+
+    assert(len(subset_names) == len(subsets))
+
 
     x = data['energy']
     y = data['reference_energy']
@@ -181,8 +204,10 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     #        continue
     #    print(data['dataset'][reaction], data['reaction_name'][reaction], data['method_name'][method], dy[reaction,method])
 
+    import time
+    t = time.time()
     for i, subset in enumerate(subsets):
-        print("subset", i)
+        print("subset", i, end='; ', flush=True)
         x_subset = x[:,subset].copy()
         y_subset = y.copy()
         # flip reactions if needed
@@ -204,6 +229,7 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
         errors.append(error)
         cv_portfolios.append(portfolio)
         all_cv_params.append(best_cv_params)
+        print("time", time.time()-t, flush=True)
 
     d['errors'] = np.asarray(errors)
     d['cv_portfolios'] = np.asarray(cv_portfolios)
