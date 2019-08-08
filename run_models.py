@@ -1324,7 +1324,7 @@ if __name__ == "__main__":
     #    print(data['reaction_name'][i], data['reaction_name'][diff])
 
     # Loop through the subsets we want to study
-    for i in range(7):
+    for i in range(8):
         print("class", i)
         if i == 0:
             idx = np.where(data['reaction_class'] == 1)[0]
@@ -1340,6 +1340,8 @@ if __name__ == "__main__":
             idx = np.where((data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
         elif i == 6:
             idx = np.where((data['reaction_class'] == 3) & (data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
+        elif i == 7:
+            idx = np.arange(0,data['reaction_class'].size)
 
         name = str(i + 1)
 
