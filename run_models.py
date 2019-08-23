@@ -1392,8 +1392,6 @@ if __name__ == "__main__":
 
     # Loop through the subsets we want to study
     for i in range(8):
-        if i != 7:
-            continue
         print("class", i)
         if i == 0:
             idx = np.where(data['reaction_class'] == 1)[0]
@@ -1421,8 +1419,8 @@ if __name__ == "__main__":
             else:
                 subdata[key] = data[key]
 
-        #print("single")
-        #run_SingleMethod(subdata, name)
+        print("single")
+        run_SingleMethod(subdata, name)
         print("linear")
         run_LinearModel(subdata, name)
         #print("markowitz")
