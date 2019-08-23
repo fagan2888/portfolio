@@ -881,7 +881,7 @@ class LinearModel(BaseModel):
             solver = "ECOS"
 
         try:
-            result = prob.solve(solver = solver)
+            result = prob.solve(solver = solver)#, max_iters=1000,abstol=1e-9,reltol=1e-9,feastol=1e-9)
         except cvxpy.error.SolverError:
             w.value = None
 
@@ -978,7 +978,7 @@ class Markowitz(LinearModel):
             solver = "ECOS"
 
         try:
-            result = prob.solve(solver = solver)
+            result = prob.solve(solver = solver)#, max_iters=1000,abstol=1e-9,reltol=1e-9,feastol=1e-9)
         except cvxpy.error.SolverError:
             w.value = None
 

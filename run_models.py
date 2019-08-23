@@ -79,7 +79,7 @@ def run_SingleMethod(data, name):
 
 def run_LinearModel(data, name):
     model = LinearModel(positive_constraint=False)
-    cv_params = {'l1_reg': 10**np.linspace(-1, 3, 40)}
+    cv_params = {'l1_reg': 10**np.linspace(-2, 4, 100)}
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
     run_method(data, model, cv_params, "pickles/%s_linear_result.pkl" % name, outer_splits, inner_splits)
     model = LinearModel(positive_constraint=True)
@@ -88,6 +88,24 @@ def run_LinearModel(data, name):
 
 def run_Markowitz(data, name):
     model = Markowitz(positive_constraint=False)
+    cv_params = {'l1_reg': 10**np.linspace(-2, 2, 40)}
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/%s_markowitz_result.pkl" % name, outer_splits, inner_splits)
+    model = Markowitz(positive_constraint=True)
+    cv_params = {}
+    run_method(data, model, cv_params, "pickles/%s_markowitz_positive_result.pkl" % name, outer_splits, inner_splits)
+
+def run_Markowitz2(data, name):
+    model = Markowitz(positive_constraint=False, method='zero_mean_min_variance')
+    cv_params = {'l1_reg': 10**np.linspace(-2, 2, 40)}
+    outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
+    run_method(data, model, cv_params, "pickles/%s_markowitz2_result.pkl" % name, outer_splits, inner_splits)
+    model = Markowitz(positive_constraint=True)
+    cv_params = {}
+    run_method(data, model, cv_params, "pickles/%s_markowitz2_positive_result.pkl" % name, outer_splits, inner_splits)
+
+def run_Markowitz3(data, name):
+    model = Markowitz(positive_constraint=False, method='mean_upper_bound_min_variance', upper_bound=0.1)
     cv_params = {'l1_reg': 10**np.linspace(-2, 2, 40)}
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
     run_method(data, model, cv_params, "pickles/%s_markowitz_result.pkl" % name, outer_splits, inner_splits)
@@ -109,6 +127,78 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     with open(path, 'wb') as f:
         pass
 
+    ## Use only gga
+    #ggas = ['B88X', 'B', 'BECKE', 'B-LYP', 'B-P', 'B-VWN', 'CS', 'D', 'HFB', 'HFS',
+    #        'LDA', 'LSDAC', 'LSDC', 'LYP88', 'PBE', 'PBEREV', 'PW91', 'S', 'SLATER', 'SOGGA11',
+    #        'SOGGA', 'S-VWN', 'VS99', 'VWN80', 'VWN', 'M06-L','M11-L','MM06-L']
+
+    #gga_mask = np.isin(data['functional'], ggas)
+    #basis_mask0 = (data['basis'] == 'sto-3g')
+    #basis_mask1 = (data['basis'] == 'SV-P') | basis_mask0
+    #basis_mask2 = np.isin(data['basis'], ['svp','6-31+G-d,p']) | basis_mask1
+    #basis_mask3 = (data['basis'] == 'avdz') | basis_mask2
+    #basis_mask4 = (data['basis'] == 'tzvp') | basis_mask3
+    #basis_mask5 = (data['basis'] == 'avtz') | basis_mask4
+    #basis_mask6 = (data['basis'] == 'qzvp') | basis_mask5
+    #mp2_mask = (data['functional'] == 'df-lrmp2')
+    #wf_mask = mp2_mask | (data['functional'] == 'DCSD')
+    #unrestricted_mask = (data['unrestricted'] == True)
+
+    #subsets = [
+    #        np.where(gga_mask & basis_mask1 & ~wf_mask)[0],
+    #        np.where(gga_mask & basis_mask2 & ~wf_mask)[0],
+    #        np.where(gga_mask & basis_mask3 & ~wf_mask)[0],
+    #        np.where(gga_mask & basis_mask4 & ~wf_mask)[0],
+    #        np.where(gga_mask & basis_mask5 & ~wf_mask)[0],
+    #        np.where(gga_mask & basis_mask6 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask1 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask2 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask3 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask4 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask5 & ~wf_mask)[0],
+    #        np.where(~gga_mask & basis_mask6 & ~wf_mask)[0]]
+
+    #for i, mask_i in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #    for j, mask_j in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #        if j > i:
+    #            continue
+    #        subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (~gga_mask & mask_j & ~wf_mask))[0])
+
+    #for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #    for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #        if j > i:
+    #            continue
+    #        subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
+    #for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #    for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+    #        if j > i:
+    #            continue
+    #        subsets.append(np.where((~gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
+
+
+    #subset_names = []
+    #for i in range(6):
+    #    subset_names.append("gga%d" % (i+1))
+    #for i in range(6):
+    #    subset_names.append("hybrid%d" % (i+1))
+
+    #for i, I in enumerate([1,2,3,4,5,6]):
+    #    for j, J in enumerate([1,2,3,4,5,6]):
+    #        if j > i:
+    #            continue
+    #        subset_names.append("gga%d+hybrid%d" % (I,J))
+
+    #for i, I in enumerate([2,3,4,5,6]):
+    #    for j, J in enumerate([2,3,4,5,6]):
+    #        if j > i:
+    #            continue
+    #        subset_names.append("gga%d+mp2%d" % (I,J))
+    #for i, I in enumerate([2,3,4,5,6]):
+    #    for j, J in enumerate([2,3,4,5,6]):
+    #        if j > i:
+    #            continue
+    #        subset_names.append("hybrid%d+mp2%d" % (I,J))
+
     # Use only gga
     ggas = ['B88X', 'B', 'BECKE', 'B-LYP', 'B-P', 'B-VWN', 'CS', 'D', 'HFB', 'HFS',
             'LDA', 'LSDAC', 'LSDC', 'LYP88', 'PBE', 'PBEREV', 'PW91', 'S', 'SLATER', 'SOGGA11',
@@ -124,66 +214,31 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     basis_mask6 = (data['basis'] == 'qzvp') | basis_mask5
     mp2_mask = (data['functional'] == 'df-lrmp2')
     wf_mask = mp2_mask | (data['functional'] == 'DCSD')
-    unrestricted_mask = (data['unrestricted'] == True)
 
     subsets = [
-            np.where(gga_mask & basis_mask1 & ~wf_mask)[0],
-            np.where(gga_mask & basis_mask2 & ~wf_mask)[0],
-            np.where(gga_mask & basis_mask3 & ~wf_mask)[0],
-            np.where(gga_mask & basis_mask4 & ~wf_mask)[0],
-            np.where(gga_mask & basis_mask5 & ~wf_mask)[0],
-            np.where(gga_mask & basis_mask6 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask1 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask2 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask3 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask4 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask5 & ~wf_mask)[0],
-            np.where(~gga_mask & basis_mask6 & ~wf_mask)[0]]
+            np.where(basis_mask1 & ~wf_mask)[0],
+            np.where(basis_mask2 & ~wf_mask)[0],
+            np.where(basis_mask3 & ~wf_mask)[0],
+            np.where(basis_mask4 & ~wf_mask)[0],
+            np.where(basis_mask5 & ~wf_mask)[0],
+            np.where(basis_mask6 & ~wf_mask)[0]]
+
+    subset_names = ["basis%d" % i for i in range(6)]
 
     for i, mask_i in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
         for j, mask_j in enumerate([basis_mask1, basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
-            if j > i:
+            if j != i-1:
                 continue
             subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (~gga_mask & mask_j & ~wf_mask))[0])
+            subset_names.append("hybrid%d+gga%d" % (j,i))
 
-    for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
-        for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
-            if j > i:
-                continue
-            subsets.append(np.where((gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
-    for i, mask_i in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
-        for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
-            if j > i:
-                continue
-            subsets.append(np.where((~gga_mask & mask_i & ~wf_mask) | (mask_j & mp2_mask))[0])
-
-
-
-    subset_names = []
-    for i in range(6):
-        subset_names.append("gga%d" % (i+1))
-    for i in range(6):
-        subset_names.append("hybrid%d" % (i+1))
-
-    for i, I in enumerate([1,2,3,4,5,6]):
-        for j, J in enumerate([1,2,3,4,5,6]):
-            if j > i:
-                continue
-            subset_names.append("gga%d+hybrid%d" % (I,J))
-
-    for i, I in enumerate([2,3,4,5,6]):
-        for j, J in enumerate([2,3,4,5,6]):
-            if j > i:
-                continue
-            subset_names.append("gga%d+mp2%d" % (I,J))
-    for i, I in enumerate([2,3,4,5,6]):
-        for j, J in enumerate([2,3,4,5,6]):
-            if j > i:
-                continue
-            subset_names.append("hybrid%d+mp2%d" % (I,J))
+    for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
+        if j > i:
+            continue
+        subsets.append(np.where((mask_i & ~wf_mask) | (basis_mask2 & mp2_mask))[0])
+        subset_names.append("basis%d+mp2/svp")
 
     assert(len(subset_names) == len(subsets))
-
 
     x = data['energy']
     y = data['reference_energy']
@@ -216,9 +271,31 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
         flip_idx = np.where(dy / dy_flipped < 0)[0]
         x_subset[flip_idx] *= -1
         y_subset[flip_idx] *= -1
+        if 'l1_reg' in cv_params:
+            # Do initial hyperparameter optimization without inner split
+            # to get the approximate range of the optimal parameter.
+            # Without doing this everything would take much longer,
+            # and we still do the inner loop on a large-ish range
+            splits = [(l,[k]) for l,k in outer_splits]
+            cvmod = sklearn.model_selection.GridSearchCV(model, param_grid = cv_params,
+                    scoring = 'neg_mean_absolute_error', iid=True,
+                            return_train_score = False, cv = splits,
+                                    n_jobs=1, refit=False)
+            cvmod.fit(x_subset, y_subset)
+            log_best_l1 = np.log10(cvmod.best_params_['l1_reg'])
+            this_cv_params = {'l1_reg': 10**np.linspace(log_best_l1-1.0,log_best_l1+1.0,20)}
+            #plt.plot(np.log10(cv_params['l1_reg']), cvmod.cv_results_['mean_test_score'], "o-")
+            #plt.plot([np.log(cv_params['l1_reg'][0]),np.log(cv_params['l1_reg'][-1])], [cvmod.best_score_*1.05]*2, "k-")
+            #plt.title(str(i))
+            #plt.savefig(str(i)+".png")
+            #plt.clf()
+            #continue
+        else:
+            this_cv_params = cv_params
+
         # Get best hyperparams from cv
         error, cv_portfolio, best_cv_params = \
-                outer_cv(x_subset, y_subset, model, cv_params, outer_splits, inner_splits)
+                outer_cv(x_subset, y_subset, model, this_cv_params, outer_splits, inner_splits)
 
         # Convert the portfolios to the full set
         portfolio = np.zeros(x.shape, dtype=float)
@@ -239,6 +316,7 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     d['dataset'] = data['dataset']
     d['reaction_class'] = data['reaction_class']
     d['subset_names'] = subset_names
+    d['subsets'] = subsets
 
     # Dump the results in a pickle
     with open(path, 'wb') as f:
@@ -1291,40 +1369,31 @@ def flip_order(x):
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
-    ## Merge heavy atom and hydrogen into same classes, meaning
-    ## class 5 is merged into 2 and 6 into 4
-    #data['reaction_class'][np.where(data['reaction_class'] == 5)[0]] = 2
-    #data['reaction_class'][np.where(data['reaction_class'] == 6)[0]] = 4
 
-    ### check for outliers
-    ##check_for_errors(data)
-    #run_SingleMethod(data)
-    #run_LinearModel(data)
-    #run_Markowitz(data)
 
-    ### Additionally merge all reactions and all barriers
-    #data['reaction_class'][np.where(data['reaction_class'] == 2)[0]] = 1
-    #data['reaction_class'][np.where(data['reaction_class'] == 4)[0]] = 3
-
-    #run_SingleMethod(data, "merged_single_method")
-    #run_LinearModel(data, "merged_linear_method")
-    #run_Markowitz(data, "merged_markowitz")
-
-    #get_hydrogen_transfer_portfolios(data)
-    #test_method(data)
-    #reaction_correlation(data)
-    #ocv, icv = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=True)
-    #for i in range(len(ocv)):
-    #    all_ = list(range(len(ocv)))
-    #    all_.pop(i)
-    #    print(data['reaction_name'][ocv[i][0][np.where(icv[i] == 0)[0]]])
-    #    quit()
-
-    #    diff = np.setdiff1d(all_, cv[i][0])
-    #    print(data['reaction_name'][i], data['reaction_name'][diff])
+    #mp2_mask = (data['functional'] == 'df-lrmp2')
+    #wf_mask = mp2_mask | (data['functional'] == 'DCSD')
+    #basis_mask = np.isin(data['basis'], ['svp','6-31+G-d,p'])
+    #mask = basis_mask #| (basis_mask & mp2_mask)
+    #x = data['energy'][:,mask].copy()
+    #y = data['reference_energy'].copy()
+    #model = LinearModel(positive_constraint=False)
+    #model = Markowitz(positive_constraint=False, method='mean_upper_bound_min_variance',upper_bound=0.1)
+    ##cv_params = {'upper_bound':10**np.linspace(-2,1,21)}
+    #cv_params = {'l1_reg': 10**np.linspace(-2, -1, 21)}#, 'upper_bound':10**np.linspace(-2,-1,21)}
+    #cv_model = sklearn.model_selection.GridSearchCV
+    #cvmod = cv_model(model, param_grid = cv_params, 
+    #        scoring = 'neg_mean_absolute_error', iid=True,
+    #                return_train_score = False, cv = 5,
+    #                        n_jobs=1)
+    #cvmod.fit(x, y)
+    #print(cvmod.best_score_, cvmod.best_params_)
+    #quit()
 
     # Loop through the subsets we want to study
     for i in range(8):
+        if i != 7:
+            continue
         print("class", i)
         if i == 0:
             idx = np.where(data['reaction_class'] == 1)[0]
@@ -1352,10 +1421,10 @@ if __name__ == "__main__":
             else:
                 subdata[key] = data[key]
 
-        print("single")
-        run_SingleMethod(data, name)
+        #print("single")
+        #run_SingleMethod(subdata, name)
         print("linear")
-        run_LinearModel(data, name)
-        print("markowitz")
-        run_Markowitz(data, name)
+        run_LinearModel(subdata, name)
+        #print("markowitz")
+        #run_Markowitz(subdata, name)
 
