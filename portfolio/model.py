@@ -823,19 +823,19 @@ class LinearModel(BaseModel):
 
         # initial run
         W = self._fit(x, y)
+        w = W.copy()
 
         # Do clipping if positive constraint, since l1 regulization will always be constant
         if self.clip_value > 0 and self.positive_constraint == True and self.sum_constraint == True:
+        #if self.clip_value > 0 and self.sum_constraint == True:
             # Max do 10 clipping refinements
             for i in range(10):
-                cond = abs(W) > self.clip_value
-                if (cond | (abs(W) < 1e-12)).all():
+                cond = abs(w) > self.clip_value
+                if (cond | (abs(w) < 1e-12)).all():
                     break
                 idx = np.where(cond)[0]
                 if len(idx) == 0:
                     print("Warning: Error occured in fitting model. Try reducing 'clip_value'")
-                    W = np.ones(self.n_features)
-                    W /= sum(W)
                     break
                 elif len(idx) == 1:
                     break

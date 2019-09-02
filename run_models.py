@@ -79,7 +79,7 @@ def run_SingleMethod(data, name):
 
 def run_LinearModel(data, name):
     model = LinearModel(positive_constraint=False)
-    cv_params = {'l1_reg': 10**np.linspace(-2, 4, 100)}
+    cv_params = {'l1_reg': 10**np.linspace(-2, 4, 3)}
     outer_splits, inner_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True)
     run_method(data, model, cv_params, "pickles/%s_linear_result.pkl" % name, outer_splits, inner_splits)
     model = LinearModel(positive_constraint=True)
@@ -235,8 +235,8 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
     for j, mask_j in enumerate([basis_mask2, basis_mask3, basis_mask4, basis_mask5, basis_mask6]):
         if j > i:
             continue
-        subsets.append(np.where((mask_i & ~wf_mask) | (basis_mask2 & mp2_mask))[0])
-        subset_names.append("basis%d+mp2/svp")
+        subsets.append(np.where((mask_j & ~wf_mask) | (basis_mask2 & mp2_mask))[0])
+        subset_names.append("basis%d+mp2/svp" % j)
 
     assert(len(subset_names) == len(subsets))
 
@@ -283,7 +283,7 @@ def run_method(data, model, cv_params, path, outer_splits, inner_splits):
                                     n_jobs=1, refit=False)
             cvmod.fit(x_subset, y_subset)
             log_best_l1 = np.log10(cvmod.best_params_['l1_reg'])
-            this_cv_params = {'l1_reg': 10**np.linspace(log_best_l1-1.0,log_best_l1+1.0,20)}
+            this_cv_params = {'l1_reg': 10**np.linspace(log_best_l1-1.0,log_best_l1+1.0,2)}
             #plt.plot(np.log10(cv_params['l1_reg']), cvmod.cv_results_['mean_test_score'], "o-")
             #plt.plot([np.log(cv_params['l1_reg'][0]),np.log(cv_params['l1_reg'][-1])], [cvmod.best_score_*1.05]*2, "k-")
             #plt.title(str(i))
@@ -540,11 +540,25 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
         train_x, train_y = x[train_idx], y[train_idx]
         test_x, test_y = x[test_idx].reshape(1,-1), y[test_idx] # Remove reshape if not using leave one out
         if len(params) > 0:
-            cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
-                    return_train_score = False, cv = inner_cv_splits[i],
-                    n_jobs=1)
-            cvmod.fit(train_x, train_y)
-            cv_portfolios.append(cvmod.best_estimator_.portfolio)
+            if "l1_reg" in params:
+                n = 10
+            else:
+                n = 1
+            portfolio = np.zeros(train_x.shape[1])
+            idx = np.arange(train_x.shape[1])
+            for _ in range(n):
+                cvmod = cv_model(m, param_grid = params, scoring = 'neg_mean_absolute_error', iid=True,
+                        return_train_score = False, cv = inner_cv_splits[i],
+                        n_jobs=1)
+                cvmod.fit(train_x[:,idx], train_y)
+                ratio = max(abs(cvmod.best_estimator_.portfolio)) * 1e-2
+                mask = abs(cvmod.best_estimator_.portfolio) > ratio
+                if sum(mask) == 0:
+                    break
+                idx = idx[mask]
+            portfolio[idx] = cvmod.best_estimator_.portfolio
+
+            cv_portfolios.append(portfolio)
             best_cv_params.append(cvmod.best_params_)
             y_pred = cvmod.predict(test_x)[0] # Remove [0] if not using leave one out
         else:
@@ -978,7 +992,6 @@ def better_leave_one_out_cv(data, include_other_reaction_types=False,
 
     return outer_splits, inner_splits
 
-
 def find_correlations(data, strict=True):
     """
     Do a bunch of fancy stuff to find correlated reactions
@@ -1261,7 +1274,6 @@ def test_method(data):
             #    #print(include, strict, "single", loss, np.mean(np.abs(errors)))
             #print(strict, include, i, j, "single", losses[np.argmin(mae)], min(mae))
 
-
 def reaction_correlation(data):
     import seaborn as sns
     import scipy.stats as ss
@@ -1366,29 +1378,74 @@ def flip_order(x):
             break
     return x
 
+def get_methods_enzyme_validation(data, mask):
+    #TODO remove unrelated reactions
+    x = data['energy'][:,mask].copy()
+    y = data['reference_energy'].copy()
+    method_names = data['method_name'][mask]
+    model = LinearModel(positive_constraint=False)
+    # Do CV to get cv-score and best l1_reg
+    cv_params = {'l1_reg': 10**np.linspace(-2, 2, 50)}
+    cv_model = sklearn.model_selection.GridSearchCV
+    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
+    splits = [(l,[k]) for l,k in outer_splits]
+    cvmod = cv_model(model, param_grid = cv_params,
+            scoring = 'neg_mean_absolute_error', iid=True,
+                    return_train_score = False, cv = splits,
+                            n_jobs=1)
+    for _ in range(10):
+        cvmod.fit(x, y)
+        best_score = cvmod.best_score_
+        best_l1 = cvmod.best_params_['l1_reg']
+        ratio = max(abs(cvmod.best_estimator_.portfolio)) * 1e-2
+        print(sum(abs(cvmod.best_estimator_.portfolio) > ratio), best_score, best_l1)
+
+        sub_mask = abs(cvmod.best_estimator_.portfolio) > ratio
+        if sum(~sub_mask) == 0:
+            break
+        x = x[:,sub_mask]
+        method_names = method_names[sub_mask]
+
+    #for i in range(len(method_names)):
+    #    if abs(cvmod.best_estimator_.portfolio[i]) > ratio:
+    #        print(method_names[i], cvmod.best_estimator_.portfolio[i])
+
+def get_methods_enzyme_validation_positive(data, mask):
+    #TODO remove unrelated reactions
+    x = data['energy'][:,mask].copy()
+    y = data['reference_energy'].copy()
+    method_names = data['method_name'][mask]
+    model = LinearModel(positive_constraint=False, clip_value=1e-6)
+    # Do CV to get cv-score
+    cv_params = {}
+    cv_model = sklearn.model_selection.GridSearchCV
+    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
+    splits = [(l,[k]) for l,k in outer_splits]
+    cvmod = cv_model(model, param_grid = cv_params,
+            scoring = 'neg_mean_absolute_error', iid=True,
+                    return_train_score = False, cv = splits,
+                            n_jobs=1)
+    cvmod.fit(x, y)
+    best_score = cvmod.best_score_
+    print(len(method_names), best_score)
+
+    for i in range(len(used_methods)):
+        if abs(model.portfolio[i]) > 1e-9:
+            print(method_names[i], model.portfolio[i])
+
+
+
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
 
-
-    #mp2_mask = (data['functional'] == 'df-lrmp2')
-    #wf_mask = mp2_mask | (data['functional'] == 'DCSD')
-    #basis_mask = np.isin(data['basis'], ['svp','6-31+G-d,p'])
-    #mask = basis_mask #| (basis_mask & mp2_mask)
-    #x = data['energy'][:,mask].copy()
-    #y = data['reference_energy'].copy()
-    #model = LinearModel(positive_constraint=False)
-    #model = Markowitz(positive_constraint=False, method='mean_upper_bound_min_variance',upper_bound=0.1)
-    ##cv_params = {'upper_bound':10**np.linspace(-2,1,21)}
-    #cv_params = {'l1_reg': 10**np.linspace(-2, -1, 21)}#, 'upper_bound':10**np.linspace(-2,-1,21)}
-    #cv_model = sklearn.model_selection.GridSearchCV
-    #cvmod = cv_model(model, param_grid = cv_params, 
-    #        scoring = 'neg_mean_absolute_error', iid=True,
-    #                return_train_score = False, cv = 5,
-    #                        n_jobs=1)
-    #cvmod.fit(x, y)
-    #print(cvmod.best_score_, cvmod.best_params_)
-    #quit()
+    mp2_mask = (data['functional'] == 'df-lrmp2')
+    wf_mask = mp2_mask | (data['functional'] == 'DCSD')
+    basis_mask1 = (data['basis'] == "SV-P")
+    basis_mask2 = np.isin(data['basis'], ['svp','6-31+G-d,p'])
+    mask = basis_mask1 & ~wf_mask
+    get_methods_enzyme_validation(data, mask)
+    quit()
 
     # Loop through the subsets we want to study
     for i in range(8):

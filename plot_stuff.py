@@ -93,17 +93,20 @@ def get_mean_lower_and_upper_bound(x, alpha=0.95, bootstrap=False):
 
 def plot_score(reaction_index="1"):
     single_data = load_pickle("pickles/%s_single_result.pkl" % reaction_index)
-    single_aux_data = load_pickle("pickles/%s_single_subset.pkl" % reaction_index)
     linear_data = load_pickle("pickles/%s_linear_result.pkl" % reaction_index)
     linear_positive_data = load_pickle("pickles/%s_linear_positive_result.pkl" % reaction_index)
-    #markowitz_data = load_pickle("pickles/%s_markowitz_result.pkl" % reaction_index)
+    markowitz_data = load_pickle("pickles/%s_markowitz_result.pkl" % reaction_index)
     markowitz_positive_data = load_pickle("pickles/%s_markowitz_positive_result.pkl" % reaction_index)
-    print(single_data.keys())
-    print(single_data['subset_names'])
-    for i, errors in enumerate(linear_positive_data['errors']):
-        print(single_data['subset_names'][i],np.mean(abs(errors)))
+    markowitz2_data = load_pickle("pickles/%s_markowitz2_result.pkl" % reaction_index)
+    markowitz2_positive_data = load_pickle("pickles/%s_markowitz2_positive_result.pkl" % reaction_index)
+    markowitz3_data = load_pickle("pickles/%s_markowitz3_result.pkl" % reaction_index)
+    markowitz3_positive_data = load_pickle("pickles/%s_markowitz3_positive_result.pkl" % reaction_index)
+    #print(linear_data.keys())
+    #print(linear_data['subset_names'])
+    #for i, errors in enumerate(linear_data['errors']):
+    #    print(linear_data['subset_names'][i],np.mean(abs(errors)))
 
-    quit()
+    #quit()
 
     subset_names = single_data['subset_names']
     #TODO figure out how method names are generated
@@ -116,18 +119,35 @@ def plot_score(reaction_index="1"):
 
     # plot gga
     #idx = isin(subset_names, 'hybrid', "+")
-    idx = np.asarray([0,1,2,3,4,5]) + 6
+    idx = np.asarray([0,1,2,3,4,5])
     single_mae, single_lb, single_ub = get_mean_lower_and_upper_bound(abs(single_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
-    linear_mae = np.mean(abs(linear_data['errors'][idx,:]), axis=1)
-    linear_positive_mae = np.mean(abs(linear_positive_data['errors'][idx,:]), axis=1)
-    markowitz_positive_mae = np.mean(abs(markowitz_positive_data['errors'][idx,:]), axis=1)
+    linear_mae, linear_lb, linear_ub = get_mean_lower_and_upper_bound(abs(linear_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    linear_positive_mae, linear_positive_lb, linear_positive_ub = get_mean_lower_and_upper_bound(abs(linear_positive_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz_mae, markowitz_lb, markowitz_ub = get_mean_lower_and_upper_bound(abs(markowitz_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz_positive_mae, markowitz_positive_lb, markowitz_positive_ub = get_mean_lower_and_upper_bound(abs(markowitz_positive_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz2_mae, markowitz2_lb, markowitz2_ub = get_mean_lower_and_upper_bound(abs(markowitz2_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz2_positive_mae, markowitz2_positive_lb, markowitz2_positive_ub = get_mean_lower_and_upper_bound(abs(markowitz2_positive_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz3_mae, markowitz3_lb, markowitz3_ub = get_mean_lower_and_upper_bound(abs(markowitz3_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
+    markowitz3_positive_mae, markowitz3_positive_lb, markowitz3_positive_ub = get_mean_lower_and_upper_bound(abs(markowitz3_positive_data['errors'][idx,:]), bootstrap=True, alpha=0.68)
     #markowitz_mae = np.exp(np.mean(np.log(abs(markowitz_data['errors'][idx,:])), axis=1))
     plt.fill_between(list(range(len(single_mae))), single_lb, single_ub, alpha=0.15)
     plt.plot(single_mae, "o-", label="single")
+    plt.fill_between(list(range(len(linear_mae))), linear_lb, linear_ub, alpha=0.15)
     plt.plot(linear_mae, "o-", label="linear")
+    plt.fill_between(list(range(len(linear_positive_mae))), linear_positive_lb, linear_positive_ub, alpha=0.15)
     plt.plot(linear_positive_mae, "o-", label="linear_positive")
+    #plt.fill_between(list(range(len(markowitz_mae))), markowitz_lb, markowitz_ub, alpha=0.15)
     #plt.plot(markowitz_mae, "o-", label="markowitz")
-    plt.plot(markowitz_positive_mae, "o-", label="markowitz_positive")
+    #plt.fill_between(list(range(len(markowitz_positive_mae))), markowitz_positive_lb, markowitz_positive_ub, alpha=0.15)
+    #plt.plot(markowitz_positive_mae, "o-", label="markowitz_positive")
+    #plt.fill_between(list(range(len(markowitz2_mae))), markowitz2_lb, markowitz2_ub, alpha=0.15)
+    #plt.plot(markowitz2_mae, "o-", label="markowitz2")
+    #plt.fill_between(list(range(len(markowitz2_positive_mae))), markowitz2_positive_lb, markowitz2_positive_ub, alpha=0.15)
+    #plt.plot(markowitz2_positive_mae, "o-", label="markowitz2_positive")
+    #plt.fill_between(list(range(len(markowitz3_mae))), markowitz3_lb, markowitz3_ub, alpha=0.15)
+    #plt.plot(markowitz3_mae, "o-", label="markowitz3")
+    #plt.fill_between(list(range(len(markowitz3_positive_mae))), markowitz3_positive_lb, markowitz3_positive_ub, alpha=0.15)
+    #plt.plot(markowitz3_positive_mae, "o-", label="markowitz3_positive")
     plt.legend()
     plt.show()
 
@@ -607,7 +627,9 @@ def plot_distribution3(file1, file2, file3, label1=None, label2=None, label3=Non
 
 if __name__ == "__main__":
 
-    plot_score("7")
+    for i in range(1,9):
+        print(i)
+        plot_score(str(i))
 
     #plot_score2("pickles/single_method_all_reactions_result.pkl", "pickles/single_method_same_reactions_result.pkl",
     #        label1="single_all", label2="single_same", filename_base='single_all_vs_same')
