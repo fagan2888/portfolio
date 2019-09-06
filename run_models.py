@@ -560,7 +560,7 @@ def outer_cv(x, y, m, params, outer_cv_splits, inner_cv_splits, grid = True):
 
             cv_portfolios.append(portfolio)
             best_cv_params.append(cvmod.best_params_)
-            y_pred = cvmod.predict(test_x)[0] # Remove [0] if not using leave one out
+            y_pred = cvmod.predict(test_x[:,idx])[0] # Remove [0] if not using leave one out
         else:
             m.fit(train_x, train_y)
             cv_portfolios.append(m.portfolio)
@@ -1378,46 +1378,14 @@ def flip_order(x):
             break
     return x
 
-def get_methods_enzyme_validation(data, mask):
+def get_methods_enzyme_validation_single(data, mask):
     #TODO remove unrelated reactions
     x = data['energy'][:,mask].copy()
     y = data['reference_energy'].copy()
     method_names = data['method_name'][mask]
-    model = LinearModel(positive_constraint=False)
+    model = SingleMethod()
     # Do CV to get cv-score and best l1_reg
-    cv_params = {'l1_reg': 10**np.linspace(-2, 2, 50)}
-    cv_model = sklearn.model_selection.GridSearchCV
-    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
-    splits = [(l,[k]) for l,k in outer_splits]
-    cvmod = cv_model(model, param_grid = cv_params,
-            scoring = 'neg_mean_absolute_error', iid=True,
-                    return_train_score = False, cv = splits,
-                            n_jobs=1)
-    for _ in range(10):
-        cvmod.fit(x, y)
-        best_score = cvmod.best_score_
-        best_l1 = cvmod.best_params_['l1_reg']
-        ratio = max(abs(cvmod.best_estimator_.portfolio)) * 1e-2
-        print(sum(abs(cvmod.best_estimator_.portfolio) > ratio), best_score, best_l1)
-
-        sub_mask = abs(cvmod.best_estimator_.portfolio) > ratio
-        if sum(~sub_mask) == 0:
-            break
-        x = x[:,sub_mask]
-        method_names = method_names[sub_mask]
-
-    #for i in range(len(method_names)):
-    #    if abs(cvmod.best_estimator_.portfolio[i]) > ratio:
-    #        print(method_names[i], cvmod.best_estimator_.portfolio[i])
-
-def get_methods_enzyme_validation_positive(data, mask):
-    #TODO remove unrelated reactions
-    x = data['energy'][:,mask].copy()
-    y = data['reference_energy'].copy()
-    method_names = data['method_name'][mask]
-    model = LinearModel(positive_constraint=False, clip_value=1e-6)
-    # Do CV to get cv-score
-    cv_params = {}
+    cv_params = {'loss': ['mae','rmsd','max']}
     cv_model = sklearn.model_selection.GridSearchCV
     outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
     splits = [(l,[k]) for l,k in outer_splits]
@@ -1427,25 +1395,108 @@ def get_methods_enzyme_validation_positive(data, mask):
                             n_jobs=1)
     cvmod.fit(x, y)
     best_score = cvmod.best_score_
-    print(len(method_names), best_score)
+    best_loss = cvmod.best_params_['loss']
+    print(method_names[np.where(cvmod.best_estimator_.portfolio == 1)[0]], best_score, best_loss)
+    print(cvmod.cv_results_['params'])
+    print(cvmod.cv_results_['mean_test_score'])
 
-    for i in range(len(used_methods)):
-        if abs(model.portfolio[i]) > 1e-9:
-            print(method_names[i], model.portfolio[i])
+def get_methods_enzyme_validation(data, mask, model):
+    #TODO remove unrelated reactions
+    x = data['energy'][:,mask].copy()
+    y = data['reference_energy'].copy()
+    method_names = data['method_name'][mask]
+    # Do CV to get cv-score and best l1_reg
+    cv_params = {'l1_reg': 10**np.linspace(-3, 2, 50)}
+    cv_model = sklearn.model_selection.GridSearchCV
+    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
+    splits = [(l,[k]) for l,k in outer_splits]
+    cvmod = cv_model(model, param_grid = cv_params,
+            scoring = 'neg_mean_absolute_error', iid=True,
+                    return_train_score = False, cv = splits,
+                            n_jobs=1)
+    for _ in range(50):
+        cvmod.fit(x, y)
+        best_score = cvmod.best_score_
+        best_l1 = cvmod.best_params_['l1_reg']
+        ratio = max(abs(cvmod.best_estimator_.portfolio)) * 1e-2
+        print(cvmod.best_estimator_.portfolio.size, best_score, best_l1)
+        for i in range(len(method_names)):
+            print(method_names[i], cvmod.best_estimator_.portfolio[i])
+        sub_mask = abs(cvmod.best_estimator_.portfolio) > ratio
+        if sum(~sub_mask) == 0:
+            sub_mask[np.argmin(abs(cvmod.best_estimator_.portfolio))] = False
+        x = x[:,sub_mask]
+        method_names = method_names[sub_mask]
+        if len(method_names) == 0:
+            break
+
+def get_methods_enzyme_validation_positive(data, mask, model):
+    #TODO remove unrelated reactions
+    x = data['energy'][:,mask].copy()
+    y = data['reference_energy'].copy()
+    method_names = data['method_name'][mask]
+    # Do CV to get cv-score and best l1_reg
+    cv_params = {}
+    cv_model = sklearn.model_selection.GridSearchCV
+    outer_splits = less_strict_leave_one_out_cv(data, include_other_reaction_types=True, do_inner_splits=False)
+    splits = [(l,[k]) for l,k in outer_splits]
+    cvmod = cv_model(model, param_grid = cv_params,
+            scoring = 'neg_mean_absolute_error', iid=True,
+                    return_train_score = False, cv = splits,
+                            n_jobs=1)
+    for _ in range(50):
+        cvmod.fit(x, y)
+        best_score = cvmod.best_score_
+        ratio = max(abs(cvmod.best_estimator_.portfolio)) * 1e-2
+        print(cvmod.best_estimator_.portfolio.size, best_score)
+        for i in range(len(method_names)):
+            print(method_names[i], cvmod.best_estimator_.portfolio[i])
+        sub_mask = abs(cvmod.best_estimator_.portfolio) > ratio
+        if sum(~sub_mask) == 0:
+            sub_mask[np.argmin(abs(cvmod.best_estimator_.portfolio))] = False
+        x = x[:,sub_mask]
+        method_names = method_names[sub_mask]
+        if len(method_names) == 0:
+            break
 
 
 
 if __name__ == "__main__":
     df = pd.read_pickle("pickles/combined_reac.pkl")
     data = parse_reaction_dataframe(df)
+    for i, name in enumerate(data['reaction_name']):
+        print(i, name)
 
     mp2_mask = (data['functional'] == 'df-lrmp2')
     wf_mask = mp2_mask | (data['functional'] == 'DCSD')
     basis_mask1 = (data['basis'] == "SV-P")
     basis_mask2 = np.isin(data['basis'], ['svp','6-31+G-d,p'])
-    mask = basis_mask1 & ~wf_mask
-    get_methods_enzyme_validation(data, mask)
-    quit()
+    model1 = LinearModel(positive_constraint=False)
+    model1p = LinearModel(positive_constraint=True)
+    model2 = Markowitz(positive_constraint=False)
+    model2p = Markowitz(positive_constraint=True)
+    model3 = Markowitz(positive_constraint=False, method='zero_mean_min_variance')
+    model3p = Markowitz(positive_constraint=True, method='zero_mean_min_variance')
+    model4 = Markowitz(positive_constraint=False, method='mean_upper_bound_min_variance', upper_bound=0.1)
+    model4p = Markowitz(positive_constraint=True, method='mean_upper_bound_min_variance', upper_bound=0.1)
+    for j in range(3):
+        if j == 0:
+            print("**SV-P**")
+            mask = basis_mask1 & ~wf_mask
+        elif j == 1:
+            print("**svp**")
+            mask = (basis_mask1 | basis_mask2) & ~wf_mask
+        elif j == 2:
+            print("**mp2/svp**")
+            mask = ((basis_mask1 | basis_mask2) & ~wf_mask) | (basis_mask2 & mp2_mask)
+        print("Single")
+        get_methods_enzyme_validation_single(data, mask)
+        for i, model in enumerate([model1, model2, model3, model4]):
+            print("Normal %d" %i)
+            get_methods_enzyme_validation(data, mask, model)
+        for i, model in enumerate([model1p, model2p, model3p, model4p]):
+            print("Positive %d" %i)
+            get_methods_enzyme_validation_positive(data, mask, model)
 
     # Loop through the subsets we want to study
     for i in range(8):
@@ -1459,11 +1510,11 @@ if __name__ == "__main__":
         elif i == 3:
             idx = np.where(data['reaction_class'] == 6)[0]
         elif i == 4:
-            idx = np.where((data['reaction_class'] == 2) & (data['reaction_class'] == 5))[0]
+            idx = np.where((data['reaction_class'] == 2) | (data['reaction_class'] == 5))[0]
         elif i == 5:
-            idx = np.where((data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
+            idx = np.where((data['reaction_class'] == 4) | (data['reaction_class'] == 6))[0]
         elif i == 6:
-            idx = np.where((data['reaction_class'] == 3) & (data['reaction_class'] == 4) & (data['reaction_class'] == 6))[0]
+            idx = np.where((data['reaction_class'] == 3) | (data['reaction_class'] == 4) | (data['reaction_class'] == 6))[0]
         elif i == 7:
             idx = np.arange(0,data['reaction_class'].size)
 
@@ -1476,8 +1527,8 @@ if __name__ == "__main__":
             else:
                 subdata[key] = data[key]
 
-        print("single")
-        run_SingleMethod(subdata, name)
+        #print("single")
+        #run_SingleMethod(subdata, name)
         print("linear")
         run_LinearModel(subdata, name)
         #print("markowitz")
